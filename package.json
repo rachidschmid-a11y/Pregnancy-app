@@ -1,0 +1,10 @@
+{
+  "name": "unser-nest",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Private, gemeinsame Web-App für werdende Eltern (Firebase).",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "firebase emulators:start --project demo-unser-nest"
+  }
+}

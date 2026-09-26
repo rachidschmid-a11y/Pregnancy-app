@@ -1,0 +1,28 @@
+# Persönliche, projektspezifische Dateien - NIEMALS committen!
+# Vorlagen dafür liegen als *.example bei (siehe README).
+firestore.rules
+.firebaserc
+
+# Sicherungen und Exporte aus der App (enthalten eure Daten und Fotos)
+unser-nest-sicherung-*.zip
+*.ics
+
+# Firebase-CLI: Cache und Logs
+.firebase/
+*-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+
+# Emulator-Exporte (können echte Testdaten enthalten)
+emulator-data/
+
+# Node
+node_modules/
+
+# Editor / Betriebssystem
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/

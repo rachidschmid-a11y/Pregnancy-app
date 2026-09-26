@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Vorlage – kopieren nach firestore.rules und die Adressen unten ersetzen:
+//   cp firestore.rules.example firestore.rules
+//
+// Sicherheitsregeln für "Unser Nest".
+// Nur Google-Konten mit einer der unten eingetragenen E-Mail-Adressen dürfen
+// die gemeinsame Liste lesen oder schreiben. Alles andere wird abgelehnt
+// (auch andere angemeldete Google-Konten, die die URL der App kennen).
+//
+// Dies ist die EINZIGE Stelle, an der festgelegt wird, wer Zugriff hat –
+// die App selbst enthält keine E-Mail-Adressen.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isFamily() {
+      return request.auth != null &&
+        request.auth.token.email_verified == true &&
+        request.auth.token.email in [
+          "person-1@example.com",
+          "person-2@example.com"
+        ];
+    }
+
+    match /nest/{docId} {
+      allow read, write: if isFamily();
+
+      // Unterkollektionen von nest/{docId} (z. B. die Baby-Kleidung: "clothing"
+      // und "clothingMeta") sind in Firestore NICHT automatisch mit abgedeckt –
+      // dieser Block gibt der Familie Zugriff auf alles darunter, in jeder Tiefe.
+      match /{document=**} {
+        allow read, write: if isFamily();
+      }
+    }
+
+    // Alles andere in dieser Datenbank ist für niemanden zugänglich.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
