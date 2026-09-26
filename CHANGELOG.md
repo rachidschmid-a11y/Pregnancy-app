@@ -30,7 +30,7 @@ alle Bereiche ohne überstehende Elemente – sowie in Chrome.
 
 Große Weiterentwicklung. Version 2 nutzt dieselbe Datenbank wie Version 1 und
 liest alle bisherigen Daten ohne Umwandlung. Den Wechsel beschreibt
-[README → Update von Version 1](README.md#update-von-version-1).
+[README → Umstieg von Version 1](README.md#umstieg-von-version-1).
 
 Als Vorbild dienten gängige Schwangerschafts- und Eltern-Apps (Checklisten,
 Wehen-Timer, Babynamen mit Partner-Abgleich, Wochenansicht) sowie
