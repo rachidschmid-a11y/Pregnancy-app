@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen an „Unser Nest“, die neuesten zuerst.
 
 ---
 
+## 27.09.2026 – Version 2.1: Eigene Anzeigenamen
+
+### Neu
+
+- **Anzeigenamen in der App:** Über das Konto-Menü → „Anzeigenamen ändern …“
+  legt ihr fest, wie ihr in der App heißt (z. B. einen Spitznamen) – für euch
+  beide in einem Dialog. Der Name erscheint überall: Begrüßung, Konto-Knopf
+  (inkl. Kürzel), „Zuständig“, „Erledigt von“, Namensbewertungen und
+  Sicherung. Das Google-Konto bleibt unverändert; ein leeres Feld bedeutet
+  „Vorname aus Google“. Gespeichert wird in `nest/shared/meta/members`
+  (Feld `displayName`), eine erneute Anmeldung überschreibt ihn nicht.
+- Enter in einem Eingabefeld eines Dialogs löst den Hauptknopf aus.
+
+---
+
 ## 26.09.2026 – Version 2.0.1: Darstellung auf iPad/iPhone (Safari)
 
 ### Behoben

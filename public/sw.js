@@ -12,7 +12,7 @@
 
 // Bei jeder neuen Version (v. a. neue Firebase-Version in index.html) den
 // Namen hochzählen – dann werden alte Dateien beim nächsten Start aufgeräumt.
-var CACHE = "unser-nest-v2.0.1";
+var CACHE = "unser-nest-v2.1";
 var APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
 
 self.addEventListener("install", function(event){

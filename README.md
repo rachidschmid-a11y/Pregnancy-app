@@ -49,7 +49,7 @@ Entwicklung und Deployment.
 | 👕 **Baby-Kleidung** | Kleidungsstücke mit Kategorie, Größe (50/56 bis 86/92, Uni Size), Farbe, Muster, Menge, Foto, Herkunft (gekauft/geschenkt/geliehen/gebraucht), „von wem“ und „gewaschen“; Bestand je Größe mit eigenen Zielen; **Jahreszeit je Größe** anhand des Entbindungstermins; Zielwert-Vorschlag passend zur Jahreszeit; **Einkaufsliste** „Was noch fehlt“; Suche, Filter und Foto-Großansicht |
 | 💕 **Namen** | Gemeinsame Namensliste (Mädchen/Junge/neutral, Bedeutung); jede Person bewertet für sich; die Bewertung der anderen Person wird erst nach der eigenen sichtbar; **Treffer**, wenn beide einen Namen mögen; Nachname zum Probelesen |
 | ⏱️ **Geburt** | **Wehen-Timer** live auf beiden Geräten mit Auswertung der letzten Stunde; wichtige Telefonnummern mit Anruf-Knopf; Stand der Kliniktasche aus der Checkliste |
-| 🔄 **Zusammenarbeit** | Echtzeit-Sync; gleichzeitige Änderungen werden **zusammengeführt** statt überschrieben |
+| 🔄 **Zusammenarbeit** | Echtzeit-Sync; gleichzeitige Änderungen werden **zusammengeführt** statt überschrieben; **eigene Anzeigenamen** (z. B. Spitznamen) unabhängig vom Google-Profil |
 | 📴 **Offline & App** | Offline-Speicher für Daten und App; installierbar als App (Android, iPhone, Desktop) |
 | 💾 **Sicherung** | Export als ZIP (CSV-Dateien, Fotos, vollständiges JSON) und Wiederherstellen daraus |
 | 🔒 **Zugriffsschutz** | Anmeldung nur mit Google und nur für freigegebene, verifizierte Adressen – serverseitig geprüft |
@@ -329,6 +329,15 @@ Eine neue Person muss an **zwei** Stellen eingetragen werden: als Testnutzer
 firebase deploy --only firestore:rules
 ```
 
+### Anzeigenamen
+
+Wie jemand in der App heißt, legt ihr direkt in der App fest: Konto-Menü (oben
+rechts) → **„Anzeigenamen ändern …“**. Der Dialog zeigt ein Feld pro Person;
+ein leeres Feld bedeutet „Vorname aus dem Google-Profil“. Der Name gilt auf
+allen Geräten und wird in `nest/shared/meta/members` als `displayName`
+gespeichert – das Google-Konto selbst bleibt unverändert, und eine erneute
+Anmeldung überschreibt den Anzeigenamen nicht.
+
 ### Gleichzeitige Änderungen (Zusammenführen)
 
 Checkliste und Kleidungs-Kategorien sind jeweils ein gemeinsames Dokument. Die
@@ -405,7 +414,7 @@ ZIP-Erzeugung und -Auslesen ab. Die Oberfläche selbst wird mit dem Emulator
 | `nest/shared/names/{id}` | Namensideen | `name`, `gender` (`w`/`m`/`n`), `note`, `votes` (je Person `2`/`1`/`-1`) |
 | `nest/shared/contacts/{id}` | Wichtige Nummern | `label`, `name`, `phone`, `order` |
 | `nest/shared/contractions/{id}` | Wehen | `start`, `end` (Millisekunden), `by` |
-| `nest/shared/meta/members` | Angemeldete Personen (für „Zuständig“) | je Nutzer-ID: `email`, `name` |
+| `nest/shared/meta/members` | Angemeldete Personen (für „Zuständig“ usw.) | je Nutzer-ID: `email`, `name` (aus Google), `displayName` (selbst gewählt, optional) |
 | `nest/shared/meta/checklistExtras` | Kopie der Angaben, die nur Version 2 kennt | `items{}` mit `wer`, `doneBy`, `doneAt`; `budget`, `birthDate` |
 
 Die Punkte der Checkliste (`categories[].items[]`) haben die Felder `id`,

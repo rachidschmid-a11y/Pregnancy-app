@@ -482,6 +482,9 @@
   .pack-main span{font-size:12.5px;color:var(--ink-3);}
   .pack details{font-size:12.5px;margin-top:2px;}
   .pack details ul{margin:6px 0 0;padding-left:18px;color:var(--ink-2);}
+  .name-edit{display:flex;flex-direction:column;gap:6px;}
+  .name-edit span{font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .name-edit b{color:var(--ink);}
   .lightbox-img{max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:var(--radius-s);}
 
   /* ---------- Baby-Kleidung: Ergänzungen ---------- */
@@ -862,7 +865,7 @@
 
   <div id="birthView" hidden></div>
 
-  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.0.1</span></footer>
+  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.1</span></footer>
 </div>
 
 <div id="toasts" aria-live="polite"></div>
@@ -898,7 +901,7 @@
   var EMULATOR_HOST = "127.0.0.1";
 
   var DOC_PATH = { collection: "nest", doc: "shared" };
-  var APP_VERSION = "2.0";
+  var APP_VERSION = "2.1";
 
   /* ========================================================= */
 
@@ -1905,13 +1908,21 @@
 
   function memberList(){
     return Object.keys(members).sort().map(function(id, i){
-      return {uid:id, email:members[id].email || "", name:members[id].name || "", idx:i};
+      return {uid:id, email:members[id].email || "", name:members[id].name || "", displayName:members[id].displayName || "", idx:i};
     });
   }
-  function firstName(m){
+  // Vorname aus dem Google-Profil (bzw. aus der E-Mail-Adresse).
+  function googleFirstName(m){
     var n = (m && (m.name || m.email)) || "";
     if (m && !m.name && m.email) n = m.email.split("@")[0];
     return n.split(/[\s._-]+/)[0] || "?";
+  }
+  // Angezeigter Name: der selbst gewählte Anzeigename aus der App, sonst der
+  // Vorname aus Google. Wird überall verwendet (Begrüßung, Zuständig, …).
+  var MAX_DISPLAY_NAME = 30;
+  function firstName(m){
+    var own = m && typeof m.displayName === "string" ? m.displayName.trim() : "";
+    return own || googleFirstName(m);
   }
   function personName(id){
     if (id === "beide") return "Beide";
@@ -1922,7 +1933,7 @@
   function initials(id){
     if (id === "beide") return "✦";
     var m = members[id];
-    var n = m ? (m.name || m.email || "?") : "?";
+    var n = m ? ((m.displayName && m.displayName.trim()) || m.name || m.email || "?") : "?";
     var parts = n.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
     return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length-1][0] : "")).toUpperCase();
   }
@@ -4578,6 +4589,11 @@
     if (dlg.open){ if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
     modalOnClick = null;
   }
+  document.getElementById("modal").addEventListener("keydown", function(e){
+    if (e.key !== "Enter" || !e.target.matches || !e.target.matches("input")) return;
+    var primary = this.querySelector(".modal-foot .btn-primary");
+    if (primary){ e.preventDefault(); primary.click(); }
+  });
   document.getElementById("modal").addEventListener("click", function(e){
     if (e.target === this){ closeModal(); return; } // Klick auf den abgedunkelten Hintergrund
     var el = e.target.closest("button, [data-pack]");
@@ -4883,8 +4899,9 @@
     var t = currentTheme();
     var list = memberList().filter(function(m){ return m.uid !== myUid(); });
     menu.innerHTML = '' +
-      '<div class="menu-head"><b>' + esc(currentUser ? (currentUser.displayName || firstName({email: currentUser.email})) : "") + '</b><span>' + esc(currentUser ? currentUser.email : "") + '</span>' +
+      '<div class="menu-head"><b>' + esc(currentUser ? firstName(members[myUid()] || {name: currentUser.displayName, email: currentUser.email}) : "") + '</b><span>' + esc(currentUser ? currentUser.email : "") + '</span>' +
         (list.length ? '<span>Gemeinsam mit ' + esc(list.map(firstName).join(", ")) + '</span>' : '') + '</div>' +
+      '<button class="menu-item" role="menuitem" data-menu="names">' + icon("user") + ' Anzeigenamen ändern …</button>' +
       (deferredInstallPrompt ? '<button class="menu-item" role="menuitem" data-menu="install">' + icon("install") + ' Als App installieren</button>' : '') +
       '<button class="menu-item" role="menuitem" data-menu="ics">' + icon("calendarPlus") + ' Termine in den Kalender</button>' +
       '<button class="menu-item" role="menuitem" data-menu="print">' + icon("printer") + ' Checkliste drucken</button>' +
@@ -4934,6 +4951,7 @@
       else if (a === "ics"){ if (state) exportIcs(null); }
       else if (a === "print"){ setMainView("checklist"); setTimeout(function(){ window.print(); }, 50); }
       else if (a === "install") promptInstall();
+      else if (a === "names") openDisplayNameDialog();
       else if (a === "signout") signOut();
     });
     document.getElementById("restoreInput").addEventListener("change", function(e){
@@ -4941,6 +4959,55 @@
       e.target.value = "";
       if (f) startRestore(f);
     });
+  }
+
+  /* ---------------- Anzeigenamen ----------------
+     Jede Person kann in der App einen eigenen Namen festlegen (z. B. einen
+     Spitznamen). Gespeichert in nest/shared/meta/members → {uid}.displayName;
+     das Google-Konto bleibt unverändert. Leer = Vorname aus Google. */
+  function openDisplayNameDialog(){
+    if (!currentUser || !docRef) return;
+    var me = myUid();
+    var list = memberList().sort(function(a, b){ return (a.uid === me ? -1 : 0) - (b.uid === me ? -1 : 0); });
+    if (!members[me]) list.unshift({uid: me, email: currentUser.email || "", name: currentUser.displayName || "", displayName: ""});
+    var rows = list.map(function(m){
+      return '<label class="name-edit"><span><b>' + (m.uid === me ? 'Du' : 'Partner:in') + '</b> · ' + esc(m.email || "") + '</span>' +
+        '<input class="input" type="text" maxlength="' + MAX_DISPLAY_NAME + '" autocomplete="off" data-name-uid="' + escAttr(m.uid) + '"' +
+        ' value="' + escAttr(m.displayName || "") + '" placeholder="' + escAttr(googleFirstName(m)) + ' (aus Google)"></label>';
+    }).join("");
+    openModal({
+      title: "Anzeigenamen",
+      body: '<p>So heißt ihr in der App – in der Begrüßung, bei „Zuständig“, „Erledigt von“ und bei den Namensbewertungen. Euer Google-Konto bleibt dabei unverändert. Leer lassen = Vorname aus dem Google-Profil.</p>' +
+        rows + (list.length < 2 ? '<p class="muted">Die zweite Person erscheint hier, sobald sie sich einmal angemeldet hat.</p>' : ''),
+      buttons: [{label: "Abbrechen", cls: "btn-ghost"}, {label: "Speichern", cls: "btn-primary", onClick: saveDisplayNames}]
+    });
+    var first = document.querySelector("#modal [data-name-uid]");
+    if (first){ first.focus(); first.select(); }
+  }
+
+  function saveDisplayNames(){
+    var upd = {}, changed = 0;
+    Array.prototype.forEach.call(document.querySelectorAll("#modal [data-name-uid]"), function(inp){
+      var id = inp.getAttribute("data-name-uid");
+      var v = inp.value.replace(/\s+/g, " ").trim().slice(0, MAX_DISPLAY_NAME);
+      var old = (members[id] && members[id].displayName) || "";
+      if (v === old) return;
+      // merge: nur dieses eine Feld schreiben; leer → Feld entfernen (= Google-Name)
+      upd[id] = {displayName: v || firebase.firestore.FieldValue.delete()};
+      members[id] = Object.assign({email: "", name: ""}, members[id], {displayName: v});
+      changed++;
+    });
+    closeModal();
+    if (!changed || !docRef) return;
+    trackSave(docRef.collection("meta").doc("members").set(upd, {merge: true})).then(function(){
+      toast(changed === 1 ? "Anzeigename gespeichert." : "Anzeigenamen gespeichert.");
+    }, function(err){
+      console.error(err);
+      toast("Anzeigename konnte nicht gespeichert werden.");
+    });
+    updateAccountButton();
+    renderChecklistSafe();
+    renderViewSafe("names");
   }
 
   function updateAccountButton(){
@@ -5007,7 +5074,7 @@
       var data = (snap.exists && snap.data()) || {};
       var next = {};
       Object.keys(data).forEach(function(k){
-        if (data[k] && typeof data[k] === "object") next[k] = {email: str(data[k].email), name: str(data[k].name)};
+        if (data[k] && typeof data[k] === "object") next[k] = {email: str(data[k].email), name: str(data[k].name), displayName: str(data[k].displayName)};
       });
       if (sameValue(next, members)) return;
       members = next;
@@ -5019,7 +5086,9 @@
       var me = {};
       me[currentUser.uid] = {email: currentUser.email || "", name: currentUser.displayName || "", lastSeen: firebase.firestore.FieldValue.serverTimestamp()};
       ref.set(me, {merge: true}).catch(function(err){ console.error(err); });
-      members[currentUser.uid] = {email: currentUser.email || "", name: currentUser.displayName || ""};
+      // Nur Google-Name und Adresse aktualisieren – ein selbst gewählter
+      // Anzeigename bleibt erhalten (merge).
+      members[currentUser.uid] = Object.assign({displayName: ""}, members[currentUser.uid], {email: currentUser.email || "", name: currentUser.displayName || ""});
       updateAccountButton();
     }
   }

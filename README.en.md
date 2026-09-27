@@ -49,7 +49,7 @@ development, and deployment.
 | 👕 **Baby clothes** | Items with category, size (50/56 to 86/92, one size), colour, pattern, quantity, photo, origin (bought/gift/borrowed/second-hand), "from whom" and "washed"; stock per size with your own targets; **season per size** based on the due date; target suggestions matching the season; **shopping list** "what's still missing"; search, filters and photo zoom |
 | 💕 **Names** | Shared list of names (girl/boy/neutral, meaning); each person rates on their own; the other person's rating only becomes visible after rating yourself; **matches** when both like a name; surname preview |
 | ⏱️ **Birth** | **Contraction timer**, live on both devices, with an analysis of the last hour; important phone numbers with a call button; hospital bag progress from the checklist |
-| 🔄 **Collaboration** | Real-time sync; simultaneous changes are **merged** instead of overwritten |
+| 🔄 **Collaboration** | Real-time sync; simultaneous changes are **merged** instead of overwritten; **custom display names** (e.g. nicknames) independent of the Google profile |
 | 📴 **Offline & app** | Offline storage for data and app; installable as an app (Android, iPhone, desktop) |
 | 💾 **Backup** | Export as ZIP (CSV files, photos, full JSON) and restore from it |
 | 🔒 **Access control** | Sign-in with Google only, and only for approved, verified addresses — enforced on the server |
@@ -325,6 +325,15 @@ item 3) and in `firestore.rules`. Then upload the rules:
 firebase deploy --only firestore:rules
 ```
 
+### Display names
+
+How someone is called in the app is set directly in the app: account menu (top
+right) → **"Anzeigenamen ändern …"** (change display names). The dialog shows
+one field per person; an empty field means "first name from the Google
+profile". The name applies on all devices and is stored in
+`nest/shared/meta/members` as `displayName` — the Google account itself stays
+unchanged, and signing in again does not overwrite the display name.
+
 ### Simultaneous changes (merging)
 
 The checklist and the clothing categories are each one shared document. The
@@ -400,7 +409,7 @@ the emulator (step 3.4).
 | `nest/shared/names/{id}` | Name ideas | `name`, `gender` (`w`/`m`/`n`), `note`, `votes` (per person `2`/`1`/`-1`) |
 | `nest/shared/contacts/{id}` | Important phone numbers | `label`, `name`, `phone`, `order` |
 | `nest/shared/contractions/{id}` | Contractions | `start`, `end` (milliseconds), `by` |
-| `nest/shared/meta/members` | Signed-in people (for "assignee") | per user ID: `email`, `name` |
+| `nest/shared/meta/members` | Signed-in people (for "assignee" etc.) | per user ID: `email`, `name` (from Google), `displayName` (chosen in the app, optional) |
 | `nest/shared/meta/checklistExtras` | Copy of the fields only version 2 knows | `items{}` with `wer`, `doneBy`, `doneAt`; `budget`, `birthDate` |
 
 Checklist items (`categories[].items[]`) have the fields `id`, `title`,
