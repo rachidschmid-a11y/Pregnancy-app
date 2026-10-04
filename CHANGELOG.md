@@ -4,6 +4,46 @@ Alle nennenswerten Änderungen an „Unser Nest“, die neuesten zuerst.
 
 ---
 
+## 04.10.2026 – Version 2.2: Verschieben per Griff ⠿
+
+### Neu
+
+- **Griff ⠿ statt ▲ ▼ in der Checkliste:** Jeder Punkt und jede Kategorie hat
+  rechts einen Griff.
+  - **Ziehen** verschiebt einen Punkt innerhalb seiner Kategorie bzw. eine
+    Kategorie zwischen den anderen. Eine Linie zeigt, wo er landet; am oberen
+    und unteren Bildschirmrand scrollt die Liste mit. Beim Ziehen einer
+    Kategorie klappen alle Kategorien kurz zu und danach wieder auf.
+  - **Antippen** öffnet ein Menü: „Ganz nach oben“, „Eins nach oben“, „Eins
+    nach unten“, „Ganz nach unten“, bei Punkten zusätzlich „In andere
+    Kategorie …“, bei Kategorien „Kategorie löschen“ (mit „Rückgängig“).
+    Das Menü lässt sich auch mit der Tastatur bedienen (Enter, Pfeiltasten,
+    Escape) – Verschieben geht also immer auch ohne Ziehen.
+  - Bei Suche, Filter oder „Erledigte ausblenden“ zählen nur die sichtbaren
+    Punkte: „Eins nach oben“ springt am ausgeblendeten Nachbarn vorbei.
+- **Aufgeräumte Zeilen:** Häkchen · Titel · Kennzeichen · Griff ·
+  Aufklapp-Pfeil. „Punkt löschen“ und „Verschieben nach …“ stehen im
+  aufgeklappten Punkt. Der Kategorie-Kopf zeigt nur noch Fortschritt, Griff
+  und Pfeil.
+- **Handy:** Griff und Pfeil stehen neben dem Titel, die Kennzeichen darunter
+  (keine eigene Zeile mehr nur für die Knöpfe). Auf Touch-Geräten (iPad,
+  Handy) ist der Griff 40 × 40 px groß.
+
+### Behoben
+
+- Hinweis beim Löschen einer Kategorie mit genau einem Punkt: „(1 Punkt)“
+  statt „(1 Punkte)“.
+
+### Technisches
+
+- Neue reine Hilfsfunktionen `placeEntry` und `neighborMove` mit Tests
+  (`npm test`, jetzt 24 Tests).
+- Während gezogen wird, zeichnet die App nicht neu; Änderungen der anderen
+  Person werden danach übernommen und wie gewohnt zusammengeführt.
+- Service-Worker-Cache `unser-nest-v2.2`.
+
+---
+
 ## 27.09.2026 – Version 2.1: Eigene Anzeigenamen
 
 ### Neu

@@ -43,7 +43,7 @@ development, and deployment.
 
 | Area | Features |
 |---|---|
-| ✅ **Checklist** | 10 categories with 74 researched example items; per item a deadline, an appointment (optionally weekly), price, assignee (me / partner / both), notes, open questions and links; "done by … on …"; move, rename and delete items and categories (with undo); search and filters; **template packs** you can add at any time (detailed hospital bag, paperwork after the birth, postpartum, birth plan); printing |
+| ✅ **Checklist** | 10 categories with 74 researched example items; per item a deadline, an appointment (optionally weekly), price, assignee (me / partner / both), notes, open questions and links; "done by … on …"; move items and categories with the **grip ⠿** (drag, or tap for a menu: to top/bottom, one up/down, to another category), rename and delete them (with undo); search and filters; **template packs** you can add at any time (detailed hospital bag, paperwork after the birth, postpartum, birth plan); printing |
 | 🤰 **Pregnancy** | Current week of pregnancy from the due date (e.g. "SSW 32+0"), trimester bar, size comparison with fruit/vegetables; after the birth the baby's age |
 | 📊 **Overview** | Tiles for open questions, appointments & deadlines and budget (sum of all prices, done/open, your own budget goal); calendar export as `.ics` with a reminder the day before |
 | 👕 **Baby clothes** | Items with category, size (50/56 to 86/92, one size), colour, pattern, quantity, photo, origin (bought/gift/borrowed/second-hand), "from whom" and "washed"; stock per size with your own targets; **season per size** based on the due date; target suggestions matching the season; **shopping list** "what's still missing"; search, filters and photo zoom |
@@ -390,8 +390,8 @@ npm test       # = node --test tests/*.test.js
 The tests read the section "REINE HILFSFUNKTIONEN" (pure helper functions)
 directly from `public/index.html` and check it with Node — without a browser,
 without Firebase and without extra packages, so no credentials are needed.
-The 22 tests cover merging simultaneous changes, compatibility with
-version 1, price parsing, week of pregnancy, season per size, target
+The 24 tests cover merging simultaneous changes, compatibility with
+version 1, moving items, price parsing, week of pregnancy, season per size, target
 suggestions, contraction analysis, calendar export, CSV protection, and
 writing and reading ZIP files. The user interface itself is tried out with
 the emulator (step 3.4).

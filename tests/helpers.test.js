@@ -18,7 +18,8 @@ function loadHelpers(){
   const names = ["uid","esc","safeUrl","isoDate","parseIsoDate","daysFromTo","stableStringify","sameValue","deepClone",
     "mergeFields","mergeOrder","mergeTree","mergeChecklist","mergeClothingCategories","parsePrice","fmtMoney",
     "pregnancyInfo","babyAge","sizeTimeframe","suggestTargets","contractionStats","fmtDuration","buildIcs","icsFold",
-    "csvCell","csvText","slug","crc32","buildZipParts","parseZip","base64ToBytes","bytesToBase64","extrasFromState","restoreV2Fields"];
+    "csvCell","csvText","slug","crc32","buildZipParts","parseZip","base64ToBytes","bytesToBase64","extrasFromState","restoreV2Fields",
+    "placeEntry","neighborMove"];
   const code = html.slice(start, end) + "\n;({" + names.join(",") + "});";
   const ctx = vm.createContext({TextEncoder, TextDecoder, Blob, Response, DecompressionStream, atob, btoa, Uint8Array, DataView, ArrayBuffer, Uint32Array, Promise, Date, Math, JSON});
   return vm.runInContext(code, ctx);
@@ -254,4 +255,32 @@ test("Version 1 speichert: bewusst gelöschte Angaben kommen nicht zurück", () 
   const afterV1 = doc([cat("c1","A",[item("i1","eins")])]);
   assert.equal(H.restoreV2Fields(afterV1, H.extrasFromState(v2)), 0);
   assert.equal(H.restoreV2Fields(afterV1, null), 0);
+});
+
+test("Verschieben: ganz nach oben/unten und vor/hinter einen anderen Punkt", () => {
+  const [a, b, c, d] = ["a", "b", "c", "d"].map((t) => ({t}));
+  const names = (l) => l.map((x) => x.t).join("");
+  const list = [a, b, c, d];
+  assert.equal(H.placeEntry(list, c, "top"), true);      assert.equal(names(list), "cabd");
+  assert.equal(H.placeEntry(list, c, "bottom"), true);   assert.equal(names(list), "abdc");
+  assert.equal(H.placeEntry(list, a, {after: d}), true); assert.equal(names(list), "bdac");
+  assert.equal(H.placeEntry(list, c, {before: b}), true); assert.equal(names(list), "cbda");
+  assert.equal(H.placeEntry(list, b, {before: d}), false, "steht schon dort");
+  assert.equal(H.placeEntry(list, b, {after: {t:"weg"}}), false, "Ziel nicht mehr da → bleibt stehen");
+  assert.equal(names(list), "cbda");
+  assert.equal(H.placeEntry(list, {t:"fremd"}, "top"), false);
+  assert.equal(list.length, 4);
+});
+
+test("Verschieben: eins nach oben/unten überspringt ausgeblendete Punkte", () => {
+  const [a, b, c, d] = ["a", "b", "c", "d"].map((t) => ({t}));
+  const names = (l) => l.map((x) => x.t).join("");
+  const list = [a, b, c, d];
+  const visible = () => list.filter((x) => x !== b);   // b ist erledigt und ausgeblendet
+  assert.equal(H.placeEntry(list, c, H.neighborMove(visible(), c, -1)), true);
+  assert.equal(names(list), "cabd", "c steht jetzt vor a – sichtbar eine Stelle höher");
+  assert.equal(H.neighborMove(visible(), c, -1), null, "erster sichtbarer Punkt");
+  assert.equal(H.neighborMove(visible(), d, 1), null, "letzter sichtbarer Punkt");
+  assert.equal(H.placeEntry(list, a, H.neighborMove(visible(), a, 1)), true);
+  assert.equal(names(list), "cbda", "a springt über das ausgeblendete b hinter d");
 });

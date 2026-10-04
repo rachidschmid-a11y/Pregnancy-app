@@ -462,6 +462,44 @@
   .item-detail-foot{justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;}
   .foot-left,.foot-right{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .move-select{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:5px 8px;font-size:12.5px;font-family:inherit;max-width:220px;}
+
+  /* ---------- Checkliste: Griff ⠿ zum Verschieben (2.2) ----------
+     Zeile: Häkchen · Titel · Kennzeichen · Griff · Aufklapp-Pfeil.
+     Auf dem Handy stehen Griff und Pfeil neben dem Titel, die Kennzeichen
+     darunter (keine eigene Zeile mehr nur für die Knöpfe). */
+  .cl-row .item-btns{display:flex;align-items:center;gap:2px;flex:0 0 auto;margin-left:auto;}
+  .cl-row .badges:empty{display:none;}
+  .cat-actions.compact{flex:0 0 auto;flex-wrap:nowrap;justify-content:flex-end;gap:2px;padding-left:0;margin-top:0;margin-left:auto;}
+  .grip-btn{cursor:grab;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+  .grip-btn svg{width:18px;height:18px;}
+  .grip-btn[aria-expanded="true"]{background:var(--surface-2);color:var(--ink);}
+  @media (pointer: coarse){ .grip-btn{min-width:40px;min-height:40px;} }
+  @media (max-width:560px){
+    .cl-row{row-gap:4px;}
+    .cl-row .item-row-main{flex:1 1 0;min-width:0;}
+    .cl-row .item-btns{order:2;}
+    .cl-row .badges{order:3;flex:1 1 100%;flex-wrap:wrap;padding-left:36px;}
+  }
+  .cat-head,.item-row{scroll-margin:96px 0 110px;}
+  .reorder-menu{right:auto;left:0;top:0;width:min(270px,calc(100vw - 24px));overflow-y:auto;z-index:90;}
+  .reorder-menu .menu-head b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .menu-item:disabled{opacity:.38;cursor:default;}
+  .menu-item:disabled:hover{background:none;}
+  .menu-item.danger,.menu-item.danger svg{color:var(--danger);}
+  .menu-item.danger:hover{background:var(--danger-soft);}
+  .menu-hint{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);padding:8px 10px 4px;border-top:1px solid var(--line);margin-top:4px;}
+  .menu-hint svg{width:14px;height:14px;flex:0 0 auto;}
+  .reorder-line{position:absolute;height:3px;border-radius:3px;background:var(--accent);z-index:35;pointer-events:none;box-shadow:0 0 0 2px var(--bg);}
+  body.reorder-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing;}
+  body.reorder-dragging .grip-btn{cursor:grabbing;}
+  .reorder-lift{position:relative;z-index:30;background:var(--surface);box-shadow:0 18px 40px -12px rgba(0,0,0,.35);opacity:.97;}
+  .item.reorder-lift{border-radius:var(--radius-m);}
+  .reorder-cats .cat-items{display:none;}
+  .reorder-items .item-detail{display:none;}
+  .category.reorder-active{overflow:visible;}
+  .reorder-flash{animation:reorderFlash 1.6s ease-out;}
+  @keyframes reorderFlash{0%,30%{background:var(--accent-soft);}100%{background:transparent;}}
+  @media (prefers-reduced-motion: reduce){ .reorder-flash{animation:none;} }
   .add-row-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media (max-width:560px){ .add-row-actions{grid-template-columns:1fr;} }
 
@@ -865,10 +903,14 @@
 
   <div id="birthView" hidden></div>
 
-  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.1</span></footer>
+  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.2</span></footer>
 </div>
 
 <div id="toasts" aria-live="polite"></div>
+
+<!-- Checkliste: Menü am Griff ⠿ und Linie beim Ziehen -->
+<div class="menu reorder-menu" id="reorderMenu" role="menu" hidden></div>
+<div class="reorder-line" id="reorderLine" hidden></div>
 
 <dialog class="modal" id="modal"><div class="modal-inner" id="modalInner"></div></dialog>
 
@@ -901,7 +943,7 @@
   var EMULATOR_HOST = "127.0.0.1";
 
   var DOC_PATH = { collection: "nest", doc: "shared" };
-  var APP_VERSION = "2.1";
+  var APP_VERSION = "2.2";
 
   /* ========================================================= */
 
@@ -949,7 +991,13 @@
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4M8.2 13.2l7.6 4"/></svg>',
     user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-4 3.6-6.3 7-6.3s6.2 2.3 7 6.3"/></svg>',
-    printer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V3.5h10V9M7 17H4.5V10a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v7H17"/><rect x="7" y="14" width="10" height="6.5" rx="1"/></svg>'
+    printer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V3.5h10V9M7 17H4.5V10a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v7H17"/><rect x="7" y="14" width="10" height="6.5" rx="1"/></svg>',
+    // neu in Version 2.2: Verschieben per Griff
+    grip: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>',
+    arrowTop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14M12 20V9M7 13l5-5 5 5"/></svg>',
+    arrowBottom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20h14M12 4v11M7 11l5 5 5-5"/></svg>',
+    moveTo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2.2h7.2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z"/><path d="M9.5 13.5h5.5M13 11.5l2 2-2 2"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg>'
   };
   function icon(name){ return ICONS[name] || ICONS.spark; }
   // Jede Kategorie bekommt je nach Symbol einen eigenen, ruhigen Farbton.
@@ -1452,6 +1500,33 @@
     var s = "";
     for (var i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     return btoa(s);
+  }
+
+  // Verschiebt entry innerhalb von list (Punkte einer Kategorie oder die
+  // Kategorien selbst). where: "top", "bottom", {before: x} oder {after: x}.
+  // Gibt true zurück, wenn sich die Reihenfolge geändert hat.
+  function placeEntry(list, entry, where){
+    var from = list.indexOf(entry);
+    if (from === -1 || !where) return false;
+    list.splice(from, 1);
+    var to;
+    if (where === "top") to = 0;
+    else if (where === "bottom") to = list.length;
+    else {
+      var ref = list.indexOf(where.before || where.after);
+      to = ref === -1 ? from : (where.before ? ref : ref + 1);
+    }
+    list.splice(to, 0, entry);
+    return to !== from;
+  }
+  // Ziel für "eins nach oben/unten": am nächsten SICHTBAREN Nachbarn vorbei.
+  // Ausgeblendete Punkte (z. B. bei "Erledigte ausblenden") zählen nicht mit,
+  // sonst würde sich auf dem Bildschirm scheinbar nichts bewegen.
+  function neighborMove(visible, entry, dir){
+    var i = visible.indexOf(entry);
+    if (i === -1) return null;
+    if (dir < 0) return i > 0 ? {before: visible[i - 1]} : null;
+    return i < visible.length - 1 ? {after: visible[i + 1]} : null;
   }
 
   /* ==== ENDE REINE HILFSFUNKTIONEN ==== */
@@ -2168,7 +2243,7 @@
     }).join("");
   }
 
-  function renderItemDetail(it, cat, idx){
+  function renderItemDetail(it, cat){
     var linkChips = (it.links || []).map(function(l, i){
       return '<span class="link-chip"><a href="' + escAttr(safeUrl(l.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(l.label) + '</a>' +
         '<button data-action="delete-link" data-item="' + escAttr(it.id) + '" data-idx="' + i + '" title="Link entfernen" aria-label="Link entfernen">' + icon("close") + '</button></span>';
@@ -2199,8 +2274,6 @@
         '</div>' +
         '<div class="item-detail-foot">' +
           '<div class="foot-left">' +
-            '<button class="icon-btn" data-action="move-item-up" data-item="' + escAttr(it.id) + '" title="Nach oben" aria-label="Punkt nach oben verschieben"' + (idx === 0 ? ' disabled' : '') + '>' + icon("arrowUp") + '</button>' +
-            '<button class="icon-btn" data-action="move-item-down" data-item="' + escAttr(it.id) + '" title="Nach unten" aria-label="Punkt nach unten verschieben"' + (idx === cat.items.length - 1 ? ' disabled' : '') + '>' + icon("arrowDown") + '</button>' +
             (state.categories.length > 1 ? '<select class="move-select" data-item="' + escAttr(it.id) + '" aria-label="In andere Kategorie verschieben">' + moveOptions + '</select>' : '') +
           '</div>' +
           '<div class="foot-right">' +
@@ -2218,14 +2291,24 @@
     return uiSearch.toLowerCase().split(/\s+/).filter(Boolean).every(function(w){ return hay.indexOf(w) !== -1; });
   }
 
+  // Gleiche Regeln wie beim Zeichnen – auch das Verschieben richtet sich danach.
+  function isFiltering(){ return !!uiSearch || uiFilter !== "all"; }
+  function itemIsVisible(it){
+    if (uiHideDone && it.done) return false;
+    return itemMatchesSearch(it) && itemMatchesFilter(it);
+  }
+  function catIsVisible(cat){ return !isFiltering() || cat.items.some(itemIsVisible); }
+
+  function gripButton(kind, id, label){
+    return '<button type="button" class="icon-btn grip-btn" data-grip="' + kind + '" data-' + (kind === "cat" ? "cat" : "item") + '="' + escAttr(id) + '"' +
+      ' aria-haspopup="menu" aria-expanded="false" aria-label="' + escAttr(label) + ' verschieben" title="Verschieben: ziehen oder antippen">' + icon("grip") + '</button>';
+  }
+
   function renderCategories(){
-    var filtering = !!uiSearch || uiFilter !== "all";
+    var filtering = isFiltering();
     var anyVisible = false;
-    var html = state.categories.map(function(cat, catIdx){
-      var visibleItems = cat.items.filter(function(it){
-        if (uiHideDone && it.done) return false;
-        return itemMatchesSearch(it) && itemMatchesFilter(it);
-      });
+    var html = state.categories.map(function(cat){
+      var visibleItems = cat.items.filter(itemIsVisible);
       if (filtering && !visibleItems.length) return "";
       anyVisible = true;
       var total = cat.items.length;
@@ -2233,23 +2316,24 @@
       var pct = total ? Math.round(done/total*100) : 0;
       var collapsed = (expanded["cat_collapsed_" + cat.id] && !filtering) ? "collapsed" : "";
 
+      // Zeile: Häkchen · Titel · Kennzeichen · Griff ⠿ · Aufklapp-Pfeil.
+      // Löschen und "Verschieben nach …" stehen im aufgeklappten Punkt.
       var itemsHtml = visibleItems.map(function(it){
         var isOpen = !!expanded[it.id];
-        var idx = cat.items.indexOf(it);
         return '' +
-          '<div class="item' + (it.done?" done":"") + '" id="row-' + escAttr(it.id) + '">' +
-            '<div class="item-row">' +
+          '<div class="item' + (it.done?" done":"") + '" id="row-' + escAttr(it.id) + '" data-row-item="' + escAttr(it.id) + '">' +
+            '<div class="item-row cl-row">' +
               '<div class="item-row-main">' +
                 '<button class="checkbox" data-action="toggle-done" data-item="' + escAttr(it.id) + '" role="checkbox" aria-checked="' + it.done + '" aria-label="Erledigt: ' + escAttr(it.title || "Punkt") + '">' + icon("check") + '</button>' +
                 '<textarea class="item-title" data-field="title" data-item="' + escAttr(it.id) + '" placeholder="Titel" rows="1" aria-label="Titel">' + esc(it.title) + '</textarea>' +
               '</div>' +
-              '<div class="item-row-meta">' +
-                '<div class="badges">' + itemBadges(it) + '</div>' +
-                '<button class="icon-btn del-item-btn" data-action="delete-item" data-item="' + escAttr(it.id) + '" title="Punkt löschen" aria-label="Punkt löschen">' + icon("trash") + '</button>' +
+              '<div class="badges">' + itemBadges(it) + '</div>' +
+              '<div class="item-btns">' +
+                gripButton("item", it.id, "„" + (it.title || "Punkt ohne Titel") + "“") +
                 '<button class="icon-btn" data-action="toggle-expand" data-item="' + escAttr(it.id) + '" aria-expanded="' + isOpen + '" aria-label="Details">' + icon("chevron") + '</button>' +
               '</div>' +
             '</div>' +
-            (isOpen ? renderItemDetail(it, cat, idx) : "") +
+            (isOpen ? renderItemDetail(it, cat) : "") +
           '</div>';
       }).join("");
 
@@ -2267,18 +2351,17 @@
       '</div>';
 
       return '' +
-        '<div class="category ' + tintClass(cat.icon) + ' ' + collapsed + '">' +
+        '<div class="category ' + tintClass(cat.icon) + ' ' + collapsed + '" data-cat-box="' + escAttr(cat.id) + '">' +
           '<div class="cat-head" data-action="toggle-collapse" data-cat="' + escAttr(cat.id) + '">' +
             '<div class="cat-icon">' + icon(cat.icon) + '</div>' +
             '<div class="cat-name-wrap">' +
               '<textarea class="cat-name" data-field="catname" data-cat="' + escAttr(cat.id) + '" rows="1" aria-label="Name der Kategorie">' + esc(cat.name) + '</textarea>' +
               '<div class="cat-progress"><i style="width:' + pct + '%"></i></div>' +
             '</div>' +
-            '<div class="cat-actions">' +
+            // Verschieben und Löschen der Kategorie: über den Griff ⠿
+            '<div class="cat-actions compact">' +
               '<span class="cat-count">' + done + '/' + total + '</span>' +
-              '<button class="icon-btn" data-action="move-cat-up" data-cat="' + escAttr(cat.id) + '" title="Nach oben verschieben" aria-label="Kategorie nach oben"' + (catIdx === 0 ? ' disabled' : '') + '>' + icon("arrowUp") + '</button>' +
-              '<button class="icon-btn" data-action="move-cat-down" data-cat="' + escAttr(cat.id) + '" title="Nach unten verschieben" aria-label="Kategorie nach unten"' + (catIdx === state.categories.length - 1 ? ' disabled' : '') + '>' + icon("arrowDown") + '</button>' +
-              '<button class="icon-btn" data-action="delete-category" data-cat="' + escAttr(cat.id) + '" title="Kategorie löschen" aria-label="Kategorie löschen">' + icon("trash") + '</button>' +
+              gripButton("cat", cat.id, "Kategorie „" + catLabel(cat.name) + "“") +
               '<button class="icon-btn" title="Ein-/ausklappen" aria-label="Ein- oder ausklappen">' + icon("chevron") + '</button>' +
             '</div>' +
           '</div>' +
@@ -2307,6 +2390,9 @@
 
   function render(){
     if (!state) return;
+    // Während gezogen wird, nicht neu zeichnen (der Eintrag würde dem Finger
+    // entrissen) – das holt finishReorderDrag nach.
+    if (reorderDrag && reorderDrag.moved){ pendingRemoteRender = true; return; }
     pendingRemoteRender = false;
     viewDirty.checklist = false;
     updateHero();
@@ -2667,6 +2753,329 @@
     }, 30);
   }
 
+  function deleteCategory(catId){
+    var fc = findCat(catId);
+    if (!fc) return;
+    state.categories.splice(fc.idx, 1);
+    render();
+    schedulePublish();
+    var delCat = fc.cat, delCatIdx = fc.idx;
+    toast("Kategorie gelöscht: „" + catLabel(delCat.name) + "“" + (delCat.items.length ? " (" + delCat.items.length + (delCat.items.length === 1 ? " Punkt)" : " Punkte)") : ""), "Rückgängig", function(){
+      if (findCat(delCat.id)) return;
+      state.categories.splice(Math.min(delCatIdx, state.categories.length), 0, delCat);
+      render(); schedulePublish(150);
+    });
+  }
+
+  /* ---------------- Checkliste: Verschieben per Griff ⠿ ----------------
+     Jeder Punkt und jede Kategorie hat rechts einen Griff:
+     - ziehen: Punkt innerhalb seiner Kategorie bzw. Kategorie zwischen den
+       anderen verschieben. Beim Ziehen einer Kategorie klappen alle
+       Kategorien kurz zu und danach wieder auf wie vorher.
+     - antippen (oder Enter): Menü mit "Ganz nach oben", "Eins nach oben",
+       "Eins nach unten", "Ganz nach unten" und "In andere Kategorie …"
+       (Punkte) bzw. "Kategorie löschen" (Kategorien). So geht alles auch
+       ohne Ziehen, z. B. mit Tastatur oder Sprachsteuerung.
+     Nur der Griff hat "touch-action: none" – überall sonst scrollt die
+     Seite wie gewohnt, auch auf iPad und Handy. */
+  var reorderDrag = null;       // laufender Zieh-Vorgang
+  var reorderMenuFor = null;    // {kind, id}, solange das Menü offen ist
+  var gripClickBlockUntil = 0;  // Klick direkt nach Tippen/Ziehen nicht doppelt auswerten
+
+  function gripId(btn){ return btn.getAttribute(btn.getAttribute("data-grip") === "cat" ? "data-cat" : "data-item"); }
+  function findGrip(kind, id){
+    return document.querySelector('#categories .grip-btn[data-grip="' + kind + '"][data-' + (kind === "cat" ? "cat" : "item") + '="' + CSS.escape(id) + '"]');
+  }
+  function findReorderBox(kind, id){
+    return document.querySelector(kind === "cat" ? '#categories [data-cat-box="' + CSS.escape(id) + '"]' : '#categories [data-row-item="' + CSS.escape(id) + '"]');
+  }
+  // Liste, Eintrag und die gerade sichtbaren Geschwister (Suche, Filter,
+  // "Erledigte ausblenden") – verschoben wird immer in der vollständigen Liste.
+  function reorderTarget(kind, id){
+    if (!state) return null;
+    if (kind === "cat"){
+      var fc = findCat(id);
+      return fc ? {list: state.categories, entry: fc.cat, visible: state.categories.filter(catIsVisible), label: catLabel(fc.cat.name)} : null;
+    }
+    var fi = findItem(id);
+    return fi ? {list: fi.cat.items, entry: fi.item, visible: fi.cat.items.filter(itemIsVisible), label: fi.item.title || "Punkt ohne Titel", cat: fi.cat} : null;
+  }
+  // Sichtbarer Bereich ohne die feste Leiste oben und (Handy) die Reiter unten.
+  function viewportLimits(){
+    var top = 8, bottom = window.innerHeight - 8;
+    var bar = document.querySelector(".topbar");
+    if (bar && getComputedStyle(bar).position === "sticky") top = Math.max(top, bar.getBoundingClientRect().bottom + 4);
+    var tabs = document.getElementById("mainTabbar");
+    if (tabs && getComputedStyle(tabs).position === "fixed"){
+      var tr = tabs.getBoundingClientRect();
+      if (tr.height) bottom = Math.min(bottom, tr.top - 4);
+    }
+    return {top: top, bottom: bottom};
+  }
+  function focusQuietly(el){
+    if (!el) return;
+    try { el.focus({preventScroll: true}); } catch(_){ el.focus(); }
+  }
+
+  // Nach dem Verschieben: Eintrag kurz hervorheben und sichtbar machen.
+  // keepAtY: Eintrag dort lassen, wo er losgelassen wurde (nach dem Ziehen).
+  function afterReorder(kind, id, opts){
+    opts = opts || {};
+    var box = findReorderBox(kind, id);
+    if (!box) return;
+    var hl = box.querySelector(kind === "cat" ? ".cat-head" : ".item-row");
+    if (hl && opts.flash !== false){ hl.classList.remove("reorder-flash"); void hl.offsetWidth; hl.classList.add("reorder-flash"); }
+    if (opts.keepAtY != null) window.scrollBy(0, box.getBoundingClientRect().top - opts.keepAtY);
+    else if (hl) hl.scrollIntoView({block: "nearest", behavior: "smooth"});
+    if (opts.focus) focusQuietly(findGrip(kind, id));
+  }
+
+  /* ----- Menü ----- */
+  function reorderMenuItem(op, ic, label, disabled, extra){
+    return '<button type="button" class="menu-item' + (op === "delete-cat" ? ' danger' : '') + '" role="menuitem" data-reorder="' + op + '"' +
+      (extra || '') + (disabled ? ' disabled' : '') + '>' + icon(ic) + ' ' + esc(label) + '</button>';
+  }
+  // focusFirst: bei Bedienung per Tastatur gleich auf den ersten Eintrag
+  function openReorderMenu(kind, id, page, focusFirst){
+    var t = reorderTarget(kind, id), btn = findGrip(kind, id);
+    var menu = document.getElementById("reorderMenu");
+    if (!t || !btn){ closeReorderMenu(false); return; }
+    if (reorderMenuFor && (reorderMenuFor.kind !== kind || reorderMenuFor.id !== id)) closeReorderMenu(false);
+    var html;
+    if (page === "cats"){
+      html = '<div class="menu-head"><b>In andere Kategorie</b><span>' + esc(t.label) + '</span></div>' +
+        reorderMenuItem("back", "back", "Zurück", false) + '<div class="menu-sep"></div>' +
+        state.categories.filter(function(c){ return c !== t.cat; }).map(function(c){
+          return reorderMenuItem("to-cat", c.icon, catLabel(c.name), false, ' data-target="' + escAttr(c.id) + '"');
+        }).join("");
+    } else {
+      var i = t.visible.indexOf(t.entry), last = t.visible.length - 1;
+      html = '<div class="menu-head"><b>' + esc(t.label) + '</b><span>' + (kind === "cat" ? "Kategorie " : "Stelle ") + (i + 1) + ' von ' + t.visible.length + '</span></div>' +
+        reorderMenuItem("top", "arrowTop", "Ganz nach oben", i <= 0) +
+        reorderMenuItem("up", "arrowUp", "Eins nach oben", i <= 0) +
+        reorderMenuItem("down", "arrowDown", "Eins nach unten", i >= last) +
+        reorderMenuItem("bottom", "arrowBottom", "Ganz nach unten", i >= last);
+      if (kind === "item" && state.categories.length > 1) html += '<div class="menu-sep"></div>' + reorderMenuItem("pick-cat", "moveTo", "In andere Kategorie …", false);
+      if (kind === "cat") html += '<div class="menu-sep"></div>' + reorderMenuItem("delete-cat", "trash", "Kategorie löschen", false);
+      html += '<div class="menu-hint">' + icon("grip") + ' Tipp: Griff festhalten und ziehen</div>';
+    }
+    menu.innerHTML = html;
+    menu.setAttribute("aria-label", (kind === "cat" ? "Kategorie verschieben: " : "Punkt verschieben: ") + t.label);
+    menu.hidden = false;
+    reorderMenuFor = {kind: kind, id: id};
+    btn.setAttribute("aria-expanded", "true");
+    positionReorderMenu(btn);
+    if (focusFirst) focusQuietly(menu.querySelector(".menu-item:not(:disabled)"));
+  }
+  // Unter dem Griff, rechtsbündig; passt es unten nicht, darüber.
+  function positionReorderMenu(btn){
+    var menu = document.getElementById("reorderMenu");
+    var lim = viewportLimits();
+    menu.style.maxHeight = Math.max(160, lim.bottom - lim.top) + "px";
+    menu.style.left = "0px"; menu.style.top = "0px";
+    var r = btn.getBoundingClientRect();
+    var mw = menu.offsetWidth, mh = menu.offsetHeight, vw = document.documentElement.clientWidth;
+    var left = Math.max(8, Math.min(r.right - mw, vw - mw - 8));
+    var top = r.bottom + 6;
+    if (top + mh > lim.bottom){
+      top = (r.top - 6 - mh >= lim.top) ? r.top - 6 - mh : Math.max(lim.top, lim.bottom - mh);
+    }
+    menu.style.left = Math.round(left + window.scrollX) + "px";
+    menu.style.top = Math.round(top + window.scrollY) + "px";
+  }
+  function closeReorderMenu(focusGrip){
+    var menu = document.getElementById("reorderMenu");
+    if (menu){ menu.hidden = true; menu.innerHTML = ""; }
+    if (!reorderMenuFor) return;
+    var f = reorderMenuFor;
+    reorderMenuFor = null;
+    var g = findGrip(f.kind, f.id);
+    if (g){ g.setAttribute("aria-expanded", "false"); if (focusGrip) focusQuietly(g); }
+  }
+  function handleReorderMenuClick(e){
+    var b = e.target.closest("[data-reorder]");
+    if (!b || b.disabled || !reorderMenuFor) return;
+    var f = reorderMenuFor, op = b.getAttribute("data-reorder");
+    if (op === "pick-cat" || op === "back"){ openReorderMenu(f.kind, f.id, op === "pick-cat" ? "cats" : null, e.detail === 0); return; }
+    closeReorderMenu(false);
+    if (op === "to-cat"){ moveItemToCategory(f.id, b.getAttribute("data-target")); if (e.detail === 0) focusQuietly(findGrip("item", f.id)); return; }
+    if (op === "delete-cat"){ deleteCategory(f.id); return; }
+    var t = reorderTarget(f.kind, f.id);
+    if (!t) return;
+    var where = (op === "top" || op === "bottom") ? op : neighborMove(t.visible, t.entry, op === "up" ? -1 : 1);
+    if (placeEntry(t.list, t.entry, where)){ render(); schedulePublish(150); }
+    afterReorder(f.kind, f.id, {focus: e.detail === 0});
+  }
+  function handleReorderMenuKey(e){
+    if (e.key === "Escape" || e.key === "Tab"){ e.preventDefault(); closeReorderMenu(true); return; }
+    if (["ArrowDown", "ArrowUp", "Home", "End"].indexOf(e.key) === -1) return;
+    e.preventDefault();
+    var items = Array.prototype.slice.call(e.currentTarget.querySelectorAll(".menu-item:not(:disabled)"));
+    if (!items.length) return;
+    var i = items.indexOf(document.activeElement);
+    if (e.key === "Home") i = 0;
+    else if (e.key === "End") i = items.length - 1;
+    else i = (i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    items[i].focus();
+  }
+
+  /* ----- Ziehen ----- */
+  function gripPointerDown(e){
+    var btn = e.target.closest && e.target.closest(".grip-btn");
+    if (!btn || !state || reorderDrag) return;
+    if (e.button > 0 || e.isPrimary === false) return;
+    var kind = btn.getAttribute("data-grip"), id = gripId(btn);
+    var wasOpen = !!(reorderMenuFor && reorderMenuFor.kind === kind && reorderMenuFor.id === id);
+    closeReorderMenu(false);
+    e.preventDefault(); // keine Textauswahl, kein Scrollen
+    // Laufende Eingabe abschließen (wird gespeichert); danach kann die Liste neu gezeichnet sein.
+    if (isEditingText()) document.activeElement.blur();
+    if (!btn.isConnected) btn = findGrip(kind, id);
+    if (!btn) return;
+    reorderDrag = {kind: kind, id: id, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, lastY: e.clientY, moved: false, wasOpen: wasOpen};
+    try { btn.setPointerCapture(e.pointerId); } catch(_){}
+  }
+  function gripPointerMove(e){
+    var d = reorderDrag;
+    if (!d || e.pointerId !== d.pointerId) return;
+    d.lastY = e.clientY;
+    if (!d.moved){
+      if (Math.abs(e.clientY - d.startY) < 6 && Math.abs(e.clientX - d.startX) < 6) return;
+      if (!startReorderDrag(d)){ reorderDrag = null; return; }
+    }
+    if (e.cancelable) e.preventDefault();
+    updateReorderDrag();
+  }
+  function startReorderDrag(d){
+    var el = findReorderBox(d.kind, d.id);
+    if (!el) return false;
+    var container = el.parentNode;
+    d.moved = true; d.el = el; d.container = container;
+    var before = el.getBoundingClientRect();
+    d.grab = d.startY - before.top;
+    document.body.classList.add("reorder-dragging");
+    container.classList.add(d.kind === "cat" ? "reorder-cats" : "reorder-items");
+    if (d.kind === "item") el.closest(".category").classList.add("reorder-active");
+    el.classList.add("reorder-lift");
+    // Zugeklappte Kategorien bzw. Details verschieben den Eintrag – die Seite
+    // so mitscrollen, dass er unter dem Finger bleibt.
+    var shift = el.getBoundingClientRect().top - before.top;
+    if (shift) window.scrollBy(0, shift);
+    var sy = window.scrollY;
+    d.elTop = el.getBoundingClientRect().top + sy;
+    var cls = d.kind === "cat" ? "category" : "item", attr = d.kind === "cat" ? "data-cat-box" : "data-row-item";
+    d.sibs = Array.prototype.filter.call(container.children, function(n){ return n !== el && n.classList.contains(cls); }).map(function(n){
+      var r = n.getBoundingClientRect();
+      return {id: n.getAttribute(attr), top: r.top + sy, bottom: r.bottom + sy};
+    });
+    d.gap = d.kind === "cat" ? (parseFloat(getComputedStyle(container).rowGap) || 0) : 0;
+    d.lim = viewportLimits();
+    var cr = container.getBoundingClientRect(), line = document.getElementById("reorderLine");
+    line.style.left = Math.round(cr.left + window.scrollX + 10) + "px";
+    line.style.width = Math.max(0, Math.round(cr.width - 20)) + "px";
+    line.hidden = false;
+    d.raf = requestAnimationFrame(reorderAutoScroll);
+    return true;
+  }
+  // Eintrag folgt dem Finger; die Linie zeigt, wo er landet.
+  function updateReorderDrag(){
+    var d = reorderDrag;
+    if (!d || !d.moved) return;
+    var y = d.lastY + window.scrollY;
+    d.el.style.transform = "translate3d(0," + Math.round(y - d.grab - d.elTop) + "px,0)";
+    var line = document.getElementById("reorderLine");
+    if (!d.sibs.length){ d.drop = null; line.hidden = true; return; }
+    var n = 0;
+    for (var i = 0; i < d.sibs.length; i++){ if (y > (d.sibs[i].top + d.sibs[i].bottom) / 2) n = i + 1; }
+    var lineY;
+    if (n < d.sibs.length){ d.drop = {before: d.sibs[n].id}; lineY = d.sibs[n].top - d.gap / 2; }
+    else { d.drop = {after: d.sibs[n - 1].id}; lineY = d.sibs[n - 1].bottom + d.gap / 2; }
+    line.style.top = Math.round(lineY - 1.5) + "px";
+  }
+  // Am oberen/unteren Rand automatisch weiterscrollen (lange Listen, Handy).
+  function reorderAutoScroll(){
+    var d = reorderDrag;
+    if (!d || !d.moved) return;
+    var zone = 56, dy = 0;
+    if (d.lastY < d.lim.top + zone) dy = -Math.ceil((d.lim.top + zone - d.lastY) / 4);
+    else if (d.lastY > d.lim.bottom - zone) dy = Math.ceil((d.lastY - (d.lim.bottom - zone)) / 4);
+    dy = Math.max(-20, Math.min(20, dy));
+    if (dy){
+      var before = window.scrollY;
+      window.scrollBy(0, dy);
+      if (window.scrollY !== before) updateReorderDrag();
+    }
+    d.raf = requestAnimationFrame(reorderAutoScroll);
+  }
+  function gripPointerUp(e){
+    var d = reorderDrag;
+    if (!d || e.pointerId !== d.pointerId) return;
+    reorderDrag = null;
+    gripClickBlockUntil = Date.now() + 600;
+    if (!d.moved){
+      // Nur angetippt: Menü öffnen (oder schließen, wenn es schon offen war).
+      if (e.type === "pointerup" && !d.wasOpen) openReorderMenu(d.kind, d.id);
+      return;
+    }
+    finishReorderDrag(d, e.type === "pointerup");
+  }
+  function finishReorderDrag(d, commit){
+    cancelAnimationFrame(d.raf);
+    document.body.classList.remove("reorder-dragging");
+    document.getElementById("reorderLine").hidden = true;
+    d.container.classList.remove("reorder-cats", "reorder-items");
+    var changed = false;
+    if (commit && d.drop){
+      var t = reorderTarget(d.kind, d.id);
+      var refId = d.drop.before || d.drop.after;
+      var ref = t && (d.kind === "cat" ? findCat(refId) : findItem(refId));
+      var refEntry = ref && (d.kind === "cat" ? ref.cat : ref.item);
+      // Nur innerhalb derselben Liste (der Partner könnte den Nachbarn eben verschoben haben).
+      if (t && refEntry && t.list.indexOf(refEntry) !== -1){
+        changed = placeEntry(t.list, t.entry, d.drop.before ? {before: refEntry} : {after: refEntry});
+      }
+    }
+    var keepAtY = d.lastY - d.grab;
+    render(); // zeichnet neu – damit sind auch Anheben und Verschiebung zurückgesetzt
+    if (changed) schedulePublish(150);
+    afterReorder(d.kind, d.id, {keepAtY: keepAtY, flash: changed});
+  }
+
+  function wireReorder(){
+    var cv = document.getElementById("checklistView");
+    var menu = document.getElementById("reorderMenu");
+    cv.addEventListener("pointerdown", gripPointerDown);
+    document.addEventListener("pointermove", gripPointerMove);
+    document.addEventListener("pointerup", gripPointerUp);
+    document.addEventListener("pointercancel", gripPointerUp);
+    // Zusätzliche Sicherung gegen Scrollen während des Ziehens (ältere Browser)
+    document.getElementById("categories").addEventListener("touchmove", function(e){
+      if (reorderDrag && e.cancelable) e.preventDefault();
+    }, {passive: false});
+    menu.addEventListener("click", handleReorderMenuClick);
+    menu.addEventListener("keydown", handleReorderMenuKey);
+    // Menü schließen bei Tippen daneben, Escape oder geänderter Fensterbreite
+    document.addEventListener("pointerdown", function(e){
+      if (!reorderMenuFor || !e.target.closest) return;
+      if (e.target.closest("#reorderMenu") || e.target.closest(".grip-btn")) return;
+      closeReorderMenu(false);
+    }, true);
+    document.addEventListener("keydown", function(e){
+      if (e.key !== "Escape") return;
+      if (reorderDrag && reorderDrag.moved){
+        var d = reorderDrag;
+        reorderDrag = null;
+        gripClickBlockUntil = Date.now() + 600;
+        finishReorderDrag(d, false);
+      } else if (reorderMenuFor) closeReorderMenu(true);
+    });
+    var lastWidth = window.innerWidth;
+    window.addEventListener("resize", function(){
+      // iOS meldet beim Scrollen "resize" (Adressleiste) – nur echte Breitenänderungen zählen.
+      if (window.innerWidth !== lastWidth){ lastWidth = window.innerWidth; closeReorderMenu(false); }
+    });
+  }
+
   function itemEvents(it){
     var ev = [];
     if (it.bisWann) ev.push({uid: it.id + "-frist", date: it.bisWann, title: "Frist: " + (it.title || "Punkt"), description: it.notizen, alarm: true});
@@ -2702,6 +3111,16 @@
     // Klick ins Kategorie-Namensfeld zum Umbenennen soll nicht ein-/ausklappen.
     if (e.target.classList && e.target.classList.contains("cat-name")) return;
     if (e.target.closest && e.target.closest(".move-select")) return;
+    // Griff ⠿: Antippen per Maus/Finger erledigt gripPointerUp – hier kommen
+    // nur noch Tastatur (Enter/Leertaste) und Sprachsteuerung an.
+    var grip = e.target.closest && e.target.closest(".grip-btn");
+    if (grip){
+      if (Date.now() < gripClickBlockUntil) return;
+      var gk = grip.getAttribute("data-grip"), gid = gripId(grip);
+      if (reorderMenuFor && reorderMenuFor.kind === gk && reorderMenuFor.id === gid) closeReorderMenu(true);
+      else openReorderMenu(gk, gid, null, true);
+      return;
+    }
     var toggle = e.target.closest("[data-action], [data-goto]");
     if (!toggle) return;
     var action = toggle.getAttribute("data-action");
@@ -2762,43 +3181,6 @@
           if (!target){ toast("Kategorie existiert nicht mehr – Wiederherstellen nicht möglich."); return; }
           if (findItem(delItem.id)) return;
           target.cat.items.splice(Math.min(delIdx, target.cat.items.length), 0, delItem);
-          render(); schedulePublish(150);
-        });
-      }
-    }
-    else if (action === "move-item-up" || action === "move-item-down"){
-      var fm = findItem(toggle.getAttribute("data-item"));
-      if (fm){
-        var j = action === "move-item-up" ? fm.idx - 1 : fm.idx + 1;
-        if (j >= 0 && j < fm.cat.items.length){
-          fm.cat.items.splice(fm.idx, 1);
-          fm.cat.items.splice(j, 0, fm.item);
-          render(); schedulePublish(150);
-          var btn = document.querySelector('[data-action="' + action + '"][data-item="' + CSS.escape(fm.item.id) + '"]');
-          if (btn && !btn.disabled) btn.focus();
-        }
-      }
-    }
-    else if (action === "move-cat-up" || action === "move-cat-down"){
-      var mc = findCat(toggle.getAttribute("data-cat"));
-      var to = mc ? (action === "move-cat-up" ? mc.idx - 1 : mc.idx + 1) : -1;
-      if (mc && to >= 0 && to < state.categories.length){
-        var tmp = state.categories[to];
-        state.categories[to] = state.categories[mc.idx];
-        state.categories[mc.idx] = tmp;
-        render(); schedulePublish(150);
-      }
-    }
-    else if (action === "delete-category"){
-      var fc2 = findCat(toggle.getAttribute("data-cat"));
-      if (fc2){
-        state.categories.splice(fc2.idx, 1);
-        render();
-        schedulePublish();
-        var delCat = fc2.cat, delCatIdx = fc2.idx;
-        toast("Kategorie gelöscht: „" + catLabel(delCat.name) + "“" + (delCat.items.length ? " (" + delCat.items.length + " Punkte)" : ""), "Rückgängig", function(){
-          if (findCat(delCat.id)) return;
-          state.categories.splice(Math.min(delCatIdx, state.categories.length), 0, delCat);
           render(); schedulePublish(150);
         });
       }
@@ -5112,6 +5494,7 @@
     cv.addEventListener("change", handleChange);
     cv.addEventListener("keydown", handleKeydown);
     cv.addEventListener("submit", handleSubmit);
+    wireReorder();
 
     document.getElementById("mainTabbar").addEventListener("click", function(e){
       var btn = e.target.closest("[data-view]");

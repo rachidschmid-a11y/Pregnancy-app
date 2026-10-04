@@ -43,7 +43,7 @@ Entwicklung und Deployment.
 
 | Bereich | Funktionen |
 |---|---|
-| ✅ **Checkliste** | 10 Kategorien mit 74 recherchierten Beispielpunkten; pro Punkt Frist, Termin (optional wöchentlich), Preis, Zuständigkeit (ich / Partner:in / beide), Notizen, offene Fragen und Links; „erledigt von … am …“; Punkte und Kategorien verschieben, umbenennen und löschen (mit „Rückgängig“); Suche und Filter; **Vorlagen-Pakete** zum Nachladen (ausführliche Kliniktasche, Behörden nach der Geburt, Wochenbett, Geburtsplan); Drucken |
+| ✅ **Checkliste** | 10 Kategorien mit 74 recherchierten Beispielpunkten; pro Punkt Frist, Termin (optional wöchentlich), Preis, Zuständigkeit (ich / Partner:in / beide), Notizen, offene Fragen und Links; „erledigt von … am …“; Punkte und Kategorien mit dem **Griff ⠿** verschieben (ziehen oder antippen – Menü mit ganz nach oben/unten, eins nach oben/unten, in andere Kategorie), umbenennen und löschen (mit „Rückgängig“); Suche und Filter; **Vorlagen-Pakete** zum Nachladen (ausführliche Kliniktasche, Behörden nach der Geburt, Wochenbett, Geburtsplan); Drucken |
 | 🤰 **Schwangerschaft** | Aktuelle Schwangerschaftswoche aus dem Entbindungstermin (z. B. „SSW 32+0“), Trimester-Leiste, Größenvergleich mit Obst/Gemüse; nach der Geburt das Alter des Babys |
 | 📊 **Übersicht** | Kacheln für offene Fragen, Termine & Fristen und Budget (Summe aller Preise, erledigt/offen, eigenes Budget-Ziel); Kalender-Export als `.ics` mit Erinnerung am Vortag |
 | 👕 **Baby-Kleidung** | Kleidungsstücke mit Kategorie, Größe (50/56 bis 86/92, Uni Size), Farbe, Muster, Menge, Foto, Herkunft (gekauft/geschenkt/geliehen/gebraucht), „von wem“ und „gewaschen“; Bestand je Größe mit eigenen Zielen; **Jahreszeit je Größe** anhand des Entbindungstermins; Zielwert-Vorschlag passend zur Jahreszeit; **Einkaufsliste** „Was noch fehlt“; Suche, Filter und Foto-Großansicht |
@@ -394,9 +394,9 @@ npm test       # = node --test tests/*.test.js
 
 Die Tests lesen den Abschnitt „REINE HILFSFUNKTIONEN“ direkt aus
 `public/index.html` und prüfen ihn mit Node – ohne Browser, ohne Firebase und
-ohne zusätzliche Pakete; es werden also keine Zugangsdaten benötigt. Die 22
+ohne zusätzliche Pakete; es werden also keine Zugangsdaten benötigt. Die 24
 Tests decken das Zusammenführen gleichzeitiger Änderungen, die Verträglichkeit
-mit Version 1, Preiserkennung, Schwangerschaftswoche, Jahreszeit je Größe,
+mit Version 1, das Verschieben von Punkten, Preiserkennung, Schwangerschaftswoche, Jahreszeit je Größe,
 Zielwert-Vorschläge, Wehen-Auswertung, Kalender-Export, CSV-Schutz sowie
 ZIP-Erzeugung und -Auslesen ab. Die Oberfläche selbst wird mit dem Emulator
 (Schritt 3.4) ausprobiert.
