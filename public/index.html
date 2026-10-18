@@ -500,6 +500,31 @@
   .reorder-flash{animation:reorderFlash 1.6s ease-out;}
   @keyframes reorderFlash{0%,30%{background:var(--accent-soft);}100%{background:transparent;}}
   @media (prefers-reduced-motion: reduce){ .reorder-flash{animation:none;} }
+
+  /* ---------- Verlauf (2.3) ---------- */
+  #historyView{display:flex;flex-direction:column;gap:16px;}
+  #historyView[hidden]{display:none;}
+  .hist-list{padding:2px 0;}
+  .hist-day{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);padding:16px 20px 6px;}
+  .hist-row{display:flex;align-items:flex-start;gap:12px;padding:12px 20px;border-top:1px solid var(--line);}
+  .hist-day + .hist-row{border-top:none;}
+  .hist-row .avatar{margin-top:1px;}
+  .hist-main{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .hist-text{font-size:14px;line-height:1.45;color:var(--ink);overflow-wrap:anywhere;}
+  .hist-text b{font-weight:700;}
+  .hist-detail{font-size:12.5px;color:var(--ink-2);line-height:1.4;overflow-wrap:anywhere;}
+  .hist-meta{font-size:12px;color:var(--ink-3);}
+  .hist-row.undone .hist-text{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--line-strong);}
+  .hist-undo{flex:0 0 auto;white-space:nowrap;}
+  .hist-undo svg{width:14px;height:14px;}
+  .hist-more{align-self:center;}
+  @media (pointer: coarse){ .hist-undo{min-height:38px;padding:8px 13px;} }
+  @media (max-width:560px){
+    .hist-row{flex-wrap:wrap;padding:12px 16px;}
+    .hist-main{flex:1 1 calc(100% - 40px);}
+    .hist-undo{margin-left:38px;}
+    .hist-day{padding:16px 16px 6px;}
+  }
   .add-row-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media (max-width:560px){ .add-row-actions{grid-template-columns:1fr;} }
 
@@ -903,7 +928,9 @@
 
   <div id="birthView" hidden></div>
 
-  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.2</span></footer>
+  <div id="historyView" hidden></div>
+
+  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.3</span></footer>
 </div>
 
 <div id="toasts" aria-live="polite"></div>
@@ -943,7 +970,7 @@
   var EMULATOR_HOST = "127.0.0.1";
 
   var DOC_PATH = { collection: "nest", doc: "shared" };
-  var APP_VERSION = "2.2";
+  var APP_VERSION = "2.3";
 
   /* ========================================================= */
 
@@ -997,7 +1024,10 @@
     arrowTop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14M12 20V9M7 13l5-5 5 5"/></svg>',
     arrowBottom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20h14M12 4v11M7 11l5 5 5-5"/></svg>',
     moveTo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2.2h7.2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z"/><path d="M9.5 13.5h5.5M13 11.5l2 2-2 2"/></svg>',
-    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg>'
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg>',
+    // neu in Version 2.3: Verlauf
+    history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5"/><path d="M12 7.5V12l3 2"/></svg>',
+    undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>'
   };
   function icon(name){ return ICONS[name] || ICONS.spark; }
   // Jede Kategorie bekommt je nach Symbol einen eigenen, ruhigen Farbton.
@@ -1529,6 +1559,185 @@
     return i < visible.length - 1 ? {after: visible[i + 1]} : null;
   }
 
+  /* ---- Verlauf: Änderungen zwischen zwei Ständen erkennen und zurücknehmen ----
+     Gilt für Listen mit Unterpunkten: die Checkliste (Kategorien → Punkte) und
+     die Kategorien der Baby-Kleidung (Kategorien → Unterkategorien).
+     Ergebnis von diffTree: Liste von Änderungen, z. B.
+       {op:"kfield", id, pid, field, old, new}  Feld eines Punkts geändert
+       {op:"kadd" | "kdel", id, pid, data}       Punkt angelegt / gelöscht
+       {op:"kmove", id, pid, from, to}           innerhalb der Kategorie verschoben
+       {op:"kcat", id, from, to}                 in eine andere Kategorie verschoben
+       {op:"field" | "add" | "del" | "move", id} dasselbe für Kategorien
+     next/prev merken die alten Nachbarn – so landet ein Eintrag beim
+     Zurücknehmen wieder an derselben Stelle, auch wenn sich die Liste
+     inzwischen verändert hat. */
+  var CHECKLIST_SPEC = {id: "id", label: "name", fields: ["name", "icon"], kids: "items", kidId: "id", kidLabel: "title",
+    kidFields: ["title", "done", "bisWann", "wann", "wannRepeatWeekly", "preis", "notizen", "zuKlaeren", "wer", "links"],
+    kidExtra: {done: ["doneBy", "doneAt"]}};
+  var CLOTHING_CATS_SPEC = {id: "key", label: "name", fields: ["name", "icon"], kids: "subs", kidId: "key", kidLabel: "name",
+    kidFields: ["name"]};
+
+  function own(o, k){ return Object.prototype.hasOwnProperty.call(o, k); }
+  // Welche Einträge wurden verschoben? (alle außer der längsten Teilfolge,
+  // die ihre Reihenfolge behalten hat). prefer: {id: true} für Einträge, die
+  // die Person tatsächlich gezogen hat – bei Gleichstand (zwei Nachbarn
+  // tauschen) gelten sie als verschoben, nicht der andere.
+  function movedIds(oldIds, newIds, prefer){
+    prefer = prefer || {};
+    var oldPos = {};
+    oldIds.forEach(function(id, i){ oldPos[id] = i; });
+    var common = newIds.filter(function(id){ return own(oldPos, id); });
+    var seq = common.map(function(id){ return oldPos[id]; });
+    var w = common.map(function(id){ return own(prefer, id) ? 1 - 1e-6 : 1; });
+    var len = [], prev = [], best = -1;
+    for (var i = 0; i < seq.length; i++){
+      len[i] = w[i]; prev[i] = -1;
+      for (var j = 0; j < i; j++) if (seq[j] < seq[i] && len[j] + w[i] > len[i]){ len[i] = len[j] + w[i]; prev[i] = j; }
+      if (best === -1 || len[i] > len[best]) best = i;
+    }
+    var keep = {};
+    while (best !== -1){ keep[best] = true; best = prev[best]; }
+    return common.filter(function(id, k){ return !keep[k]; });
+  }
+  function diffTree(A, B, spec, prefer){
+    A = A || []; B = B || [];
+    var out = [];
+    var pid = function(p){ return p[spec.id]; }, kid = function(k){ return k[spec.kidId]; };
+    var kidsOf = function(p){ return p[spec.kids] || []; };
+    var aP = {}, bP = {}, aK = {}, bK = {};
+    A.forEach(function(p, i){ aP[pid(p)] = {p: p, i: i}; kidsOf(p).forEach(function(k, j){ aK[kid(k)] = {k: k, pid: pid(p), i: j}; }); });
+    B.forEach(function(p, i){ bP[pid(p)] = {p: p, i: i}; kidsOf(p).forEach(function(k, j){ bK[kid(k)] = {k: k, pid: pid(p), i: j}; }); });
+    var aIds = A.map(pid), bIds = B.map(pid);
+    var neighbors = function(ids, id){ var i = ids.indexOf(id); return {prev: i > 0 ? ids[i - 1] : null, next: i < ids.length - 1 ? ids[i + 1] : null}; };
+    // Kategorien
+    A.forEach(function(p, i){
+      if (own(bP, pid(p))) return;
+      out.push(Object.assign({op: "del", id: pid(p), label: p[spec.label], count: kidsOf(p).length, data: deepClone(p), index: i}, neighbors(aIds, pid(p))));
+    });
+    B.forEach(function(p){
+      if (!own(aP, pid(p))){ out.push({op: "add", id: pid(p), label: p[spec.label], data: deepClone(p)}); return; }
+      var o = aP[pid(p)].p;
+      spec.fields.forEach(function(f){
+        if (!sameValue(o[f], p[f])) out.push({op: "field", id: pid(p), label: p[spec.label], field: f, old: deepClone(o[f]), new: deepClone(p[f])});
+      });
+    });
+    var commonOld = aIds.filter(function(id){ return own(bP, id); });
+    movedIds(aIds, bIds, prefer).forEach(function(id){
+      out.push(Object.assign({op: "move", id: id, label: bP[id].p[spec.label], from: aP[id].i, to: bP[id].i, index: aP[id].i}, neighbors(commonOld, id)));
+    });
+    // Unterpunkte
+    A.forEach(function(p){
+      if (!own(bP, pid(p))) return; // ganze Kategorie gelöscht – steckt in deren Eintrag
+      var ids = kidsOf(p).map(kid);
+      kidsOf(p).forEach(function(k, j){
+        if (own(bK, kid(k))) return;
+        out.push(Object.assign({op: "kdel", id: kid(k), pid: pid(p), label: k[spec.kidLabel], plabel: p[spec.label], data: deepClone(k), index: j}, neighbors(ids, kid(k))));
+      });
+    });
+    B.forEach(function(p){
+      if (!own(aP, pid(p))) return; // neue Kategorie – steckt in deren Eintrag
+      kidsOf(p).forEach(function(k){
+        var id = kid(k);
+        if (!own(aK, id)){ out.push({op: "kadd", id: id, pid: pid(p), label: k[spec.kidLabel], plabel: p[spec.label], data: deepClone(k)}); return; }
+        var a = aK[id];
+        if (a.pid !== pid(p)){
+          var oldSibs = kidsOf(aP[a.pid].p).map(kid).filter(function(x){ return x === id || (own(bK, x) && bK[x].pid === a.pid); });
+          out.push(Object.assign({op: "kcat", id: id, label: k[spec.kidLabel], from: a.pid, to: pid(p),
+            flabel: aP[a.pid].p[spec.label], plabel: p[spec.label], index: a.i}, neighbors(oldSibs, id)));
+        }
+        spec.kidFields.forEach(function(f){
+          if (sameValue(a.k[f], k[f])) return;
+          var c = {op: "kfield", id: id, pid: pid(p), label: k[spec.kidLabel], plabel: p[spec.label], field: f, old: deepClone(a.k[f]), new: deepClone(k[f])};
+          var ex = spec.kidExtra && spec.kidExtra[f];
+          if (ex){
+            c.oldExtra = {}; c.newExtra = {};
+            ex.forEach(function(x){ c.oldExtra[x] = a.k[x] == null ? "" : a.k[x]; c.newExtra[x] = k[x] == null ? "" : k[x]; });
+          }
+          out.push(c);
+        });
+      });
+      var oldIds = kidsOf(aP[pid(p)].p).map(kid).filter(function(x){ return own(bK, x) && bK[x].pid === pid(p); });
+      var newIds = kidsOf(p).map(kid).filter(function(x){ return own(aK, x) && aK[x].pid === pid(p); });
+      movedIds(oldIds, newIds, prefer).forEach(function(id){
+        out.push(Object.assign({op: "kmove", id: id, pid: pid(p), label: bK[id].k[spec.kidLabel], plabel: p[spec.label],
+          from: aK[id].i, to: bK[id].i, index: aK[id].i}, neighbors(oldIds, id)));
+      });
+    });
+    return out;
+  }
+
+  // Fügt obj in arr wieder an der alten Stelle ein: vor dem alten Nachbarn
+  // unten, sonst hinter dem oben, sonst an der alten Position.
+  function insertNear(arr, obj, idKey, ch){
+    var ids = arr.map(function(x){ return x[idKey]; });
+    var at;
+    if (ch.next && ids.indexOf(ch.next) !== -1) at = ids.indexOf(ch.next);
+    else if (ch.prev && ids.indexOf(ch.prev) !== -1) at = ids.indexOf(ch.prev) + 1;
+    else at = Math.min(typeof ch.index === "number" ? ch.index : arr.length, arr.length);
+    arr.splice(at, 0, obj);
+  }
+  // Nimmt eine Änderung aus diffTree in list zurück (ändert list direkt).
+  // Ohne force wird nichts überschrieben, was danach noch einmal geändert
+  // wurde – dann {ok:false, reason:"changed"}; die App fragt nach.
+  function undoTreeChange(list, ch, spec, force){
+    var pIndex = function(id){ for (var i = 0; i < list.length; i++) if (list[i][spec.id] === id) return i; return -1; };
+    var findKid = function(id){
+      for (var i = 0; i < list.length; i++){
+        var ks = list[i][spec.kids] || [];
+        for (var j = 0; j < ks.length; j++) if (ks[j][spec.kidId] === id) return {p: list[i], k: ks[j], i: j};
+      }
+      return null;
+    };
+    var ok = {ok: true}, gone = {ok: false, reason: "gone"}, i, f;
+    switch (ch.op){
+      case "field":
+        i = pIndex(ch.id); if (i < 0) return gone;
+        if (!force && !sameValue(list[i][ch.field], ch.new)) return {ok: false, reason: "changed", current: list[i][ch.field]};
+        list[i][ch.field] = deepClone(ch.old); return ok;
+      case "del":
+        if (pIndex(ch.id) >= 0) return {ok: false, reason: "exists"};
+        insertNear(list, deepClone(ch.data), spec.id, ch); return ok;
+      case "add":
+        i = pIndex(ch.id); if (i < 0) return gone;
+        if (!force && !sameValue(list[i], ch.data)) return {ok: false, reason: "changed", count: (list[i][spec.kids] || []).length};
+        list.splice(i, 1); return ok;
+      case "move":
+        i = pIndex(ch.id); if (i < 0) return gone;
+        insertNear(list, list.splice(i, 1)[0], spec.id, ch); return ok;
+      case "kfield":
+        f = findKid(ch.id); if (!f) return gone;
+        if (!force && !sameValue(f.k[ch.field], ch.new)) return {ok: false, reason: "changed", current: f.k[ch.field]};
+        f.k[ch.field] = deepClone(ch.old);
+        if (ch.oldExtra) Object.keys(ch.oldExtra).forEach(function(x){ f.k[x] = ch.oldExtra[x]; });
+        return ok;
+      case "kdel":
+        if (findKid(ch.id)) return {ok: false, reason: "exists"};
+        i = pIndex(ch.pid); if (i < 0) return {ok: false, reason: "parentGone"};
+        if (!list[i][spec.kids]) list[i][spec.kids] = [];
+        insertNear(list[i][spec.kids], deepClone(ch.data), spec.kidId, ch); return ok;
+      case "kadd":
+        f = findKid(ch.id); if (!f) return gone;
+        if (!force && !sameValue(f.k, ch.data)) return {ok: false, reason: "changed"};
+        f.p[spec.kids].splice(f.i, 1); return ok;
+      case "kadds":
+        var present = (ch.items || []).map(function(d){ return {d: d, f: findKid(d[spec.kidId])}; }).filter(function(x){ return x.f; });
+        if (!present.length) return gone;
+        if (!force && present.some(function(x){ return !sameValue(x.f.k, x.d); })) return {ok: false, reason: "changed"};
+        present.forEach(function(x){ var g = findKid(x.d[spec.kidId]); g.p[spec.kids].splice(g.i, 1); });
+        return ok;
+      case "kcat":
+      case "kmove":
+        f = findKid(ch.id); if (!f) return gone;
+        var target = ch.op === "kcat" ? ch.from : ch.pid;
+        var now = ch.op === "kcat" ? ch.to : ch.pid;
+        if (!force && f.p[spec.id] !== now) return {ok: false, reason: "changed"};
+        i = pIndex(target); if (i < 0) return {ok: false, reason: "parentGone"};
+        var moving = f.p[spec.kids].splice(f.i, 1)[0];
+        insertNear(list[i][spec.kids], moving, spec.kidId, ch); return ok;
+    }
+    return {ok: false, reason: "unknown"};
+  }
+
   /* ==== ENDE REINE HILFSFUNKTIONEN ==== */
   function newItem(title){ return {id:uid("item"), title:title, done:false, bisWann:"", wann:"", wannRepeatWeekly:false, preis:"", notizen:"", zuKlaeren:"", links:[], wer:"", doneBy:"", doneAt:""}; }
 
@@ -1911,7 +2120,7 @@
   var members = {};         // uid → {email, name}
 
   // Ansicht
-  var VIEW_HASH = {checklist:"checkliste", baby:"kleidung", names:"namen", birth:"geburt"};
+  var VIEW_HASH = {checklist:"checkliste", baby:"kleidung", names:"namen", birth:"geburt", history:"verlauf"};
   var mainView = "checklist";
   var viewDirty = {};       // Bereiche, die beim nächsten Anzeigen neu gezeichnet werden müssen
 
@@ -2532,7 +2741,9 @@
   function repairFromVersion1(){
     if (!checklistNeedsRepair || !state || checklistExtras === null) return;
     checklistNeedsRepair = false;
+    recordTree("checklist");
     var restored = restoreV2Fields(state, checklistExtras);
+    trackSet("checklist"); // Reparatur ist keine Änderung einer Person
     if (restored){
       console.info("Unser Nest: " + restored + " Angaben nach einer Änderung mit Version 1 wiederhergestellt.");
       renderChecklistSafe();
@@ -2553,6 +2764,7 @@
     clearTimeout(publishTimer);
     publishTimer = null;
     if (!docRef || !state) return Promise.resolve();
+    recordTree("checklist");
     if (publishInFlight && !fast){ publishAgain = true; return Promise.resolve(); }
     var localSnap = deepClone(state);
     var ref = docRef;
@@ -2566,6 +2778,8 @@
       var changedByOthers = !sameValue(merged, localSnap);
       // Was seit dem Absenden noch eingegeben wurde, bleibt erhalten.
       state = mergeChecklist(localSnap, state, merged);
+      // Änderungen der anderen Person auch in den erfassten Stand übernehmen
+      if (histTrack.checklist) histTrack.checklist = mergeChecklist(localSnap, histTrack.checklist, merged);
       baseState = merged;
       writeChecklistExtras();
       if (changedByOthers) renderChecklistSafe();
@@ -2598,6 +2812,7 @@
   function subscribeFirestore(){
     var db = firebase.firestore();
     docRef = db.collection(DOC_PATH.collection).doc(DOC_PATH.doc);
+    historyRef = docRef.collection("history");
     unsubscribeSnap = docRef.onSnapshot({includeMetadataChanges: true}, function(snap){
       var fromCache = snap.metadata.fromCache;
       if (!accessConfirmed){
@@ -2619,6 +2834,7 @@
         if (state) return; // eigene Vorlage wird gerade angelegt
         state = defaultState();
         baseState = null;
+        trackSet("checklist"); // die Vorlage ist keine Änderung für den Verlauf
         render();
         doPublish(); // Erster Start: gemeinsames Dokument mit der Vorlage anlegen.
         return;
@@ -2630,6 +2846,9 @@
         if (!savesInFlight) setSaveStatus(fromCache || isOfflineNow() ? "offline" : "saved");
         return;
       }
+      // Verlauf: eigene Änderungen jetzt erfassen – danach kommen die des
+      // anderen Geräts dazu, die gehören nicht in den eigenen Verlauf.
+      if (state) recordTree("checklist");
       if (state && baseState && hasUnsavedChanges()){
         // Eigene, noch nicht gespeicherte Änderungen behalten und die des
         // anderen Geräts dazunehmen.
@@ -2640,6 +2859,7 @@
         state = deepClone(remote);
       }
       baseState = remote;
+      trackSet("checklist");
       renderChecklistSafe();
       repairFromVersion1();
       if (!savesInFlight) setSaveStatus(fromCache || isOfflineNow() ? "offline" : "saved");
@@ -2753,18 +2973,37 @@
     }, 30);
   }
 
+  function deleteChecklistItem(itemId){
+    var fi = findItem(itemId);
+    if (!fi) return;
+    fi.cat.items.splice(fi.idx, 1);
+    delete expanded[itemId];
+    render();
+    schedulePublish();
+    // Gleich in den Verlauf – „Rückgängig“ im Hinweis nimmt genau diesen Eintrag zurück.
+    var entry = findRecorded(recordTree("checklist"), "kdel", itemId);
+    toast("Punkt gelöscht: " + q(fi.item.title), entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
+  }
+
+  function askDeleteCategory(catId){
+    var fc = findCat(catId);
+    if (!fc) return;
+    var n = fc.cat.items.length;
+    confirmDelete({title: "Kategorie löschen?",
+      html: "<b>" + esc(q(catLabel(fc.cat.name))) + "</b>" + (n ? " mit " + plural(n, "Punkt", "Punkten") : "") + " wird für euch beide gelöscht.",
+      onConfirm: function(){ deleteCategory(catId); }});
+  }
+
   function deleteCategory(catId){
     var fc = findCat(catId);
     if (!fc) return;
     state.categories.splice(fc.idx, 1);
     render();
     schedulePublish();
-    var delCat = fc.cat, delCatIdx = fc.idx;
-    toast("Kategorie gelöscht: „" + catLabel(delCat.name) + "“" + (delCat.items.length ? " (" + delCat.items.length + (delCat.items.length === 1 ? " Punkt)" : " Punkte)") : ""), "Rückgängig", function(){
-      if (findCat(delCat.id)) return;
-      state.categories.splice(Math.min(delCatIdx, state.categories.length), 0, delCat);
-      render(); schedulePublish(150);
-    });
+    var delCat = fc.cat;
+    var entry = findRecorded(recordTree("checklist"), "del", catId);
+    toast("Kategorie gelöscht: „" + catLabel(delCat.name) + "“" + (delCat.items.length ? " (" + plural(delCat.items.length, "Punkt", "Punkte") + ")" : ""),
+      entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
   }
 
   /* ---------------- Checkliste: Verschieben per Griff ⠿ ----------------
@@ -2899,11 +3138,11 @@
     if (op === "pick-cat" || op === "back"){ openReorderMenu(f.kind, f.id, op === "pick-cat" ? "cats" : null, e.detail === 0); return; }
     closeReorderMenu(false);
     if (op === "to-cat"){ moveItemToCategory(f.id, b.getAttribute("data-target")); if (e.detail === 0) focusQuietly(findGrip("item", f.id)); return; }
-    if (op === "delete-cat"){ deleteCategory(f.id); return; }
+    if (op === "delete-cat"){ askDeleteCategory(f.id); return; }
     var t = reorderTarget(f.kind, f.id);
     if (!t) return;
     var where = (op === "top" || op === "bottom") ? op : neighborMove(t.visible, t.entry, op === "up" ? -1 : 1);
-    if (placeEntry(t.list, t.entry, where)){ render(); schedulePublish(150); }
+    if (placeEntry(t.list, t.entry, where)){ histMoved[f.id] = true; render(); schedulePublish(150); }
     afterReorder(f.kind, f.id, {focus: e.detail === 0});
   }
   function handleReorderMenuKey(e){
@@ -3033,6 +3272,7 @@
       // Nur innerhalb derselben Liste (der Partner könnte den Nachbarn eben verschoben haben).
       if (t && refEntry && t.list.indexOf(refEntry) !== -1){
         changed = placeEntry(t.list, t.entry, d.drop.before ? {before: refEntry} : {after: refEntry});
+        if (changed) histMoved[d.id] = true;
       }
     }
     var keepAtY = d.lastY - d.grab;
@@ -3169,28 +3409,25 @@
     else if (action === "delete-item"){
       var fi = findItem(toggle.getAttribute("data-item"));
       if (fi){
-        fi.cat.items.splice(fi.idx, 1);
-        delete expanded[fi.item.id];
-        render();
-        schedulePublish();
-        // Die Löschung wird in dieser Funktion festgehalten (nicht global), damit
-        // "Rückgängig" auch bei mehreren Löschungen die richtige wiederherstellt.
-        var delItem = fi.item, delCatId = fi.cat.id, delIdx = fi.idx;
-        toast("Punkt gelöscht: „" + (delItem.title || "ohne Titel") + "“", "Rückgängig", function(){
-          var target = findCat(delCatId); // aktueller Stand – kann inzwischen neu geladen sein
-          if (!target){ toast("Kategorie existiert nicht mehr – Wiederherstellen nicht möglich."); return; }
-          if (findItem(delItem.id)) return;
-          target.cat.items.splice(Math.min(delIdx, target.cat.items.length), 0, delItem);
-          render(); schedulePublish(150);
-        });
+        var delId = fi.item.id;
+        confirmDelete({title: "Punkt löschen?", html: "<b>" + esc(q(fi.item.title)) + "</b> wird für euch beide gelöscht.",
+          onConfirm: function(){ deleteChecklistItem(delId); }});
       }
     }
     else if (action === "delete-link"){
       var fl = findItem(toggle.getAttribute("data-item"));
       var li = parseInt(toggle.getAttribute("data-idx"), 10);
       if (fl && fl.item.links[li]){
-        fl.item.links.splice(li,1);
-        render(); schedulePublish();
+        var link = fl.item.links[li], linkItemId = fl.item.id;
+        confirmDelete({title: "Link entfernen?", html: "Der Link <b>" + esc(q(link.label || link.url)) + "</b> wird aus " + esc(q(fl.item.title)) + " entfernt.",
+          label: "Entfernen", onConfirm: function(){
+            var f2 = findItem(linkItemId);
+            if (!f2) return;
+            var k = f2.item.links.indexOf(link);
+            if (k === -1) return;
+            f2.item.links.splice(k, 1);
+            render(); schedulePublish(150);
+          }});
       }
     }
     else if (action === "add-link"){
@@ -3878,6 +4115,7 @@
       if (!cats && snap.metadata.fromCache && clothingCategoriesBase) return; // offline: nichts Neues
       // Solange nie bearbeitet wurde, gibt es das Dokument nicht → Vorlage.
       var remote = cats || cloneClothingCategories(DEFAULT_CLOTHING_CATEGORIES);
+      if (clothingCatsConfirmed) recordTree("clothingCats");
       if (clothingCategoriesTimer !== null || clothingCatsInFlight){
         // Eigene, noch nicht gespeicherte Änderungen behalten und die des anderen dazunehmen.
         clothingCategories = mergeClothingCategories(clothingCategoriesBase || remote, clothingCategories, remote);
@@ -3885,6 +4123,7 @@
         clothingCategories = remote;
       }
       clothingCategoriesBase = cloneClothingCategories(remote);
+      trackSet("clothingCats");
       renderBabySafe();
     }, function(err){
       console.error(err);
@@ -3902,6 +4141,7 @@
     clearTimeout(clothingCategoriesTimer);
     clothingCategoriesTimer = null;
     if (!clothingCategoriesRef) return Promise.resolve();
+    recordTree("clothingCats");
     var localSnap = cloneClothingCategories(clothingCategories);
     var base = clothingCategoriesBase || cloneClothingCategories(DEFAULT_CLOTHING_CATEGORIES);
     var ref = clothingCategoriesRef;
@@ -3910,6 +4150,7 @@
       if (fast || ref !== clothingCategoriesRef) return;
       var changedByOthers = !sameValue(merged, localSnap);
       clothingCategories = mergeClothingCategories(localSnap, clothingCategories, merged);
+      if (histTrack.clothingCats) histTrack.clothingCats = mergeClothingCategories(localSnap, histTrack.clothingCats, merged);
       clothingCategoriesBase = cloneClothingCategories(merged);
       if (changedByOthers) renderBabySafe();
     }, function(err){
@@ -3925,6 +4166,7 @@
       // Erster Start offline: die gespeicherten Kategorien sind noch unbekannt.
       // Bearbeiten würde sie beim nächsten Verbinden mit der Vorlage überschreiben.
       clothingCategories = cloneClothingCategories(clothingCategoriesBase || DEFAULT_CLOTHING_CATEGORIES);
+      trackSet("clothingCats");
       toast("Die Kategorien sind noch nicht geladen – Änderungen sind möglich, sobald ihr online seid.");
       renderBabySafe();
       return;
@@ -3949,7 +4191,11 @@
     });
   }
 
-  function setClothingTarget(key, value){
+  // silent: nicht einzeln in den Verlauf (Vorschläge, Rückgängig)
+  function setClothingTarget(key, value, silent){
+    if (!silent && (clothingTargets[key] || 0) !== value){
+      writeHistory({area: "clothing", op: "target", key: key, label: targetLabel(key), old: clothingTargets[key] || 0, new: value});
+    }
     clothingTargets[key] = value;
     pendingTargetChanges[key] = value;
     clearTimeout(clothingTargetsTimer);
@@ -3960,21 +4206,23 @@
     var tf = sizeTimeframe(babySelectedSize, babyReferenceDate());
     var climate = tf ? tf.climate : "mild";
     var sugg = suggestTargets(babySelectedSize, climate);
-    var previous = {}, n = 0;
+    var previous = {}, changesForHistory = {}, n = 0;
     Object.keys(sugg).forEach(function(k){
       var p = k.split("|");
       if (!findClothingSub(findClothingCat(p[0]), p[1])) return; // Unterkategorie gibt es nicht (mehr)
       var key = clothingTargetKey(p[0], p[1], babySelectedSize);
       if ((clothingTargets[key] || 0) > 0 || !sugg[k]) return;  // eigene Werte nie überschreiben
       previous[key] = clothingTargets[key] || 0;
-      setClothingTarget(key, sugg[k]);
+      changesForHistory[key] = [previous[key], sugg[k]];
+      setClothingTarget(key, sugg[k], true);
       n++;
     });
     renderBaby();
     if (!n){ toast("Alle Zielwerte für " + babySelectedSize + " sind schon gesetzt – es wurde nichts geändert."); return; }
+    var entry = writeHistory({area: "clothing", op: "targets", size: babySelectedSize, count: n, changes: changesForHistory});
     toast(plural(n, "Zielwert", "Zielwerte") + " für " + babySelectedSize + " vorgeschlagen" + (tf ? " (" + (climate === "warm" ? "eher warm" : (climate === "kalt" ? "eher kalt" : "Übergangszeit")) + ")" : "") + ".", "Rückgängig", function(){
-      Object.keys(previous).forEach(function(key){ setClothingTarget(key, previous[key]); });
-      renderBabySafe();
+      if (entry) undoHistoryEntry(entry, {force: true});
+      else { Object.keys(previous).forEach(function(key){ setClothingTarget(key, previous[key], true); }); renderBabySafe(); }
     });
   }
 
@@ -4024,10 +4272,12 @@
     // Firestore zeigt den Eintrag sofort lokal an (auch offline) – das Formular
     // wird deshalb direkt geleert, nicht erst nach der Server-Bestätigung.
     // So entstehen durch Doppelklicks auch keine doppelten Einträge.
-    trackSave(clothingColRef.add(p.data)).catch(function(err){
+    var newRef = clothingColRef.doc();
+    trackSave(newRef.set(p.data)).catch(function(err){
       console.error(err);
       toast("Fehler beim Speichern: " + (err && err.message ? err.message : "unbekannt"));
     });
+    writeHistory({area: "clothing", op: "cloth-add", id: newRef.id, label: (p.data.menge > 1 ? p.data.menge + "× " : "") + clothingLabel(p.data)});
     toast((p.data.menge > 1 ? p.data.menge + "× " : "") + "Hinzugefügt: " + p.label);
     // Kategorie, Größe, Herkunft und "von" bleiben für das nächste Stück stehen.
     babyFormState.muster = "";
@@ -4041,6 +4291,14 @@
     if (!clothingColRef){ toast("Noch nicht bereit – bitte kurz warten."); return; }
     var p = clothingPayloadFromForm();
     if (!p) return;
+    var before = findClothingItem(id);
+    if (before){
+      var oldF = {}, newF = {};
+      CLOTHING_FIELDS.forEach(function(k){
+        if (!sameValue(before[k], p.data[k])){ oldF[k] = before[k]; newF[k] = p.data[k]; }
+      });
+      if (Object.keys(newF).length) writeHistory({area: "clothing", op: "cloth-edit", id: id, label: clothingLabel(p.data), old: oldF, new: newF});
+    }
     p.data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
     trackSave(clothingColRef.doc(id).update(p.data)).catch(function(err){
       console.error(err);
@@ -4092,22 +4350,16 @@
     if (!item) return;
     var cat = findClothingCat(item.ober);
     var sub = cat && findClothingSub(cat, item.unter);
-    toast("Gelöscht: " + (cat ? cat.name : "Kleidungsstück") + (sub ? " – " + sub.name : ""), "Rückgängig", function(){
-      // Mit derselben ID wiederherstellen (inkl. Foto).
-      var data = Object.assign({}, item);
-      delete data.id;
-      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      trackSave(colRef.doc(id).set(data)).catch(function(err){
-        console.error(err);
-        toast("Wiederherstellen fehlgeschlagen.");
-      });
-    });
+    // Im Verlauf mit allen Angaben (inkl. Foto) – so lässt es sich wiederherstellen.
+    var entry = writeHistory({area: "clothing", op: "cloth-del", id: id, label: clothingLabel(item), data: item});
+    toast("Gelöscht: " + (cat ? cat.name : "Kleidungsstück") + (sub ? " – " + sub.name : ""), entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
   }
 
   function toggleWashed(id){
     var item = findClothingItem(id);
     if (!item || !clothingColRef) return;
     item.gewaschen = !item.gewaschen;
+    writeHistory({area: "clothing", op: "cloth-edit", id: id, label: clothingLabel(item), old: {gewaschen: !item.gewaschen}, new: {gewaschen: item.gewaschen}});
     renderBaby();
     trackSave(clothingColRef.doc(id).update({gewaschen: item.gewaschen})).catch(function(err){
       console.error(err);
@@ -4178,7 +4430,10 @@
       suggestTargetsForSelectedSize();
     }
     else if (action === "baby-delete-item"){
-      deleteClothingItem(toggle.getAttribute("data-id"));
+      var delClothId = toggle.getAttribute("data-id"), delCloth = findClothingItem(delClothId);
+      if (delCloth) confirmDelete({title: "Kleidungsstück löschen?", html: "<b>" + esc(clothingLabel(delCloth)) + "</b>" +
+          (delCloth.menge > 1 ? " (" + delCloth.menge + " Stück)" : "") + " wird für euch beide gelöscht" + (delCloth.photo ? ", samt Foto" : "") + ".",
+        onConfirm: function(){ deleteClothingItem(delClothId); }});
     }
     else if (action === "baby-toggle-washed"){
       toggleWashed(toggle.getAttribute("data-id"));
@@ -4238,7 +4493,7 @@
     }
   }
 
-  function deleteClothingCategory(catKey){
+  function deleteClothingCategory(catKey, confirmed){
     var idx = findClothingCatIndex(catKey);
     if (idx === -1) return;
     var cat = clothingCategories[idx];
@@ -4248,18 +4503,20 @@
       toast("„" + catLabel(cat.name) + "“ enthält noch " + n + " Stück – bitte diese zuerst löschen oder einer anderen Kategorie zuordnen.");
       return;
     }
+    if (!confirmed){
+      confirmDelete({title: "Kategorie löschen?", html: "Die Kleidungs-Kategorie <b>" + esc(q(catLabel(cat.name))) + "</b>" +
+          (cat.subs.length ? " mit " + plural(cat.subs.length, "Unterkategorie", "Unterkategorien") : "") + " wird für euch beide gelöscht.",
+        onConfirm: function(){ deleteClothingCategory(catKey, true); }});
+      return;
+    }
     clothingCategories.splice(idx, 1);
     renderBaby();
     scheduleClothingCategoriesPublish(150);
-    toast("Kategorie gelöscht: „" + catLabel(cat.name) + "“", "Rückgängig", function(){
-      if (findClothingCat(cat.key)) return;
-      clothingCategories.splice(Math.min(idx, clothingCategories.length), 0, cat);
-      renderBabySafe();
-      scheduleClothingCategoriesPublish(150);
-    });
+    var entry = findRecorded(recordTree("clothingCats"), "del", catKey);
+    toast("Kategorie gelöscht: „" + catLabel(cat.name) + "“", entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
   }
 
-  function deleteClothingSubcategory(catKey, subKey){
+  function deleteClothingSubcategory(catKey, subKey, confirmed){
     var cat = findClothingCat(catKey);
     if (!cat) return;
     var idx = -1;
@@ -4271,17 +4528,16 @@
       toast("„" + catLabel(sub.name) + "“ enthält noch " + n + " Stück – bitte diese zuerst löschen oder einer anderen Unterkategorie zuordnen.");
       return;
     }
+    if (!confirmed){
+      confirmDelete({title: "Unterkategorie löschen?", html: "<b>" + esc(q(catLabel(sub.name))) + "</b> (in " + esc(q(catLabel(cat.name))) + ") wird für euch beide gelöscht.",
+        onConfirm: function(){ deleteClothingSubcategory(catKey, subKey, true); }});
+      return;
+    }
     cat.subs.splice(idx, 1);
     renderBaby();
     scheduleClothingCategoriesPublish(150);
-    toast("Unterkategorie gelöscht: „" + catLabel(sub.name) + "“", "Rückgängig", function(){
-      var target = findClothingCat(catKey); // aktueller Stand
-      if (!target){ toast("Kategorie existiert nicht mehr – Wiederherstellen nicht möglich."); return; }
-      if (findClothingSub(target, subKey)) return;
-      target.subs.splice(Math.min(idx, target.subs.length), 0, sub);
-      renderBabySafe();
-      scheduleClothingCategoriesPublish(150);
-    });
+    var entry = findRecorded(recordTree("clothingCats"), "kdel", subKey);
+    toast("Unterkategorie gelöscht: „" + catLabel(sub.name) + "“", entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
   }
 
   function focusBabyAddSub(catKey){
@@ -4563,10 +4819,12 @@
     var note = document.getElementById("nameNote").value.trim();
     var votes = {};
     votes[myUid()] = 1; // wer einen Namen einträgt, mag ihn vermutlich
-    trackSave(namesRef.add({name: name, gender: gender, note: note, votes: votes, createdBy: myUid(),
+    var nameRef = namesRef.doc();
+    trackSave(nameRef.set({name: name, gender: gender, note: note, votes: votes, createdBy: myUid(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()})).catch(function(err){
       console.error(err); toast("Name konnte nicht gespeichert werden.");
     });
+    writeHistory({area: "names", op: "name-add", id: nameRef.id, label: name});
     input.value = ""; document.getElementById("nameNote").value = "";
     input.focus();
   }
@@ -4583,12 +4841,10 @@
   function deleteName(id){
     var n = babyNames.filter(function(x){ return x.id === id; })[0];
     if (!n || !namesRef) return;
-    var ref = namesRef;
-    trackSave(ref.doc(id).delete()).catch(function(err){ console.error(err); });
-    toast("„" + n.name + "“ gelöscht", "Rückgängig", function(){
-      trackSave(ref.doc(id).set({name: n.name, gender: n.gender, note: n.note, votes: n.votes, createdBy: n.createdBy,
-        createdAt: firebase.firestore.Timestamp.fromMillis(n.created)})).catch(function(err){ console.error(err); });
-    });
+    trackSave(namesRef.doc(id).delete()).catch(function(err){ console.error(err); });
+    var entry = writeHistory({area: "names", op: "name-del", id: id, label: n.name,
+      data: {name: n.name, gender: n.gender, note: n.note, votes: n.votes, createdBy: n.createdBy, created: n.created}});
+    toast("„" + n.name + "“ gelöscht", entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
   }
 
   function wireNamesEvents(){
@@ -4603,7 +4859,11 @@
       if (!t) return;
       var a = t.getAttribute("data-action");
       if (a === "name-vote") voteName(t.getAttribute("data-id"), parseInt(t.getAttribute("data-v"), 10));
-      else if (a === "name-delete") deleteName(t.getAttribute("data-id"));
+      else if (a === "name-delete"){
+        var delNameId = t.getAttribute("data-id"), delName = babyNames.filter(function(x){ return x.id === delNameId; })[0];
+        if (delName) confirmDelete({title: "Name löschen?", html: "<b>" + esc(q(delName.name)) + "</b> wird samt euren Bewertungen gelöscht.",
+          onConfirm: function(){ deleteName(delNameId); }});
+      }
       else if (a === "names-filter"){
         var f = t.getAttribute("data-filter");
         namesFilter = (namesFilter === f) ? "all" : f;
@@ -4789,11 +5049,8 @@
     var batch = firebase.firestore().batch();
     backup.forEach(function(c){ batch.delete(ref.doc(c.id)); });
     trackSave(batch.commit()).catch(function(err){ console.error(err); });
-    toast(plural(backup.length, "Eintrag", "Einträge") + " gelöscht – der Timer beginnt neu.", "Rückgängig", function(){
-      var b2 = firebase.firestore().batch();
-      backup.forEach(function(c){ b2.set(ref.doc(c.id), {start: c.start, end: c.end, by: c.by}); });
-      trackSave(b2.commit()).catch(function(err){ console.error(err); });
-    });
+    var entry = writeHistory({area: "birth", op: "contr-clear", count: backup.length, items: backup});
+    toast(plural(backup.length, "Eintrag", "Einträge") + " gelöscht – der Timer beginnt neu.", entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
   }
 
   function saveContact(form){
@@ -4804,11 +5061,19 @@
     var id = form.getAttribute("data-id");
     var data = {label: label, name: name, phone: phone};
     if (id){
+      var oldC = contacts.filter(function(c){ return c.id === id; })[0];
+      if (oldC){
+        var o = {}, nw = {};
+        Object.keys(data).forEach(function(k){ if ((oldC[k] || "") !== data[k]){ o[k] = oldC[k] || ""; nw[k] = data[k]; } });
+        if (Object.keys(nw).length) writeHistory({area: "birth", op: "contact-edit", id: id, label: label || name, old: o, new: nw});
+      }
       trackSave(contactsRef.doc(id).update(data)).catch(function(err){ console.error(err); });
     } else {
       data.order = contacts.length ? Math.max.apply(null, contacts.map(function(c){ return c.order; })) + 1 : 0;
       data.note = "";
-      trackSave(contactsRef.add(data)).catch(function(err){ console.error(err); });
+      var cRef = contactsRef.doc();
+      trackSave(cRef.set(data)).catch(function(err){ console.error(err); });
+      writeHistory({area: "birth", op: "contact-add", id: cRef.id, label: label || name});
     }
     contactEditingId = null;
     renderBirth();
@@ -4824,25 +5089,31 @@
       else if (a === "contraction-delete"){
         var id = t.getAttribute("data-id");
         var c = contractions.filter(function(x){ return x.id === id; })[0];
-        var ref = contractionsRef;
-        trackSave(ref.doc(id).delete()).catch(function(err){ console.error(err); });
-        if (c) toast("Eintrag gelöscht", "Rückgängig", function(){
-          trackSave(ref.doc(id).set({start: c.start, end: c.end, by: c.by})).catch(function(err){ console.error(err); });
-        });
+        if (c) confirmDelete({title: "Wehe löschen?", html: "Der Eintrag von <b>" + esc(clockTime(c.start)) + " Uhr</b> wird gelöscht.",
+          onConfirm: function(){
+            if (!contractionsRef) return;
+            trackSave(contractionsRef.doc(id).delete()).catch(function(err){ console.error(err); });
+            var entry = writeHistory({area: "birth", op: "contr-del", id: id, label: clockTime(c.start) + " Uhr", data: c});
+            toast("Eintrag gelöscht", entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
+          }});
       }
-      else if (a === "contractions-clear") clearContractions();
+      else if (a === "contractions-clear"){
+        if (contractions.length) confirmDelete({title: "Alle Wehen löschen?", html: "Alle <b>" + plural(contractions.length, "Eintrag", "Einträge") + "</b> des Wehen-Timers werden gelöscht, der Timer beginnt neu.",
+          label: "Alle löschen", onConfirm: clearContractions});
+      }
       else if (a === "contact-new"){ contactEditingId = "new"; renderBirth(); var l = document.getElementById("contactLabel"); if (l) l.focus(); }
       else if (a === "contact-edit"){ contactEditingId = t.getAttribute("data-id"); renderBirth(); var l2 = document.getElementById("contactLabel"); if (l2) l2.focus(); }
       else if (a === "contact-cancel"){ contactEditingId = null; renderBirth(); }
       else if (a === "contact-delete"){
         var cid = t.getAttribute("data-id");
         var ct = contacts.filter(function(x){ return x.id === cid; })[0];
-        var cref = contactsRef;
-        trackSave(cref.doc(cid).delete()).catch(function(err){ console.error(err); });
-        if (ct) toast("„" + (ct.label || ct.name) + "“ gelöscht", "Rückgängig", function(){
-          var data = Object.assign({}, ct); delete data.id;
-          trackSave(cref.doc(cid).set(data)).catch(function(err){ console.error(err); });
-        });
+        if (ct) confirmDelete({title: "Kontakt löschen?", html: "<b>" + esc(q(ct.label || ct.name)) + "</b>" + (ct.phone ? " (" + esc(ct.phone) + ")" : "") + " wird für euch beide gelöscht.",
+          onConfirm: function(){
+            if (!contactsRef) return;
+            trackSave(contactsRef.doc(cid).delete()).catch(function(err){ console.error(err); });
+            var entry = writeHistory({area: "birth", op: "contact-del", id: cid, label: ct.label || ct.name, data: ct});
+            toast("„" + (ct.label || ct.name) + "“ gelöscht", entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
+          }});
       }
       else if (a === "goto-bag"){
         var catId = t.getAttribute("data-cat");
@@ -4867,15 +5138,509 @@
   }
 
   /* =========================================================
+     VERLAUF – wer hat wann was geändert (mit „Rückgängig“)
+     Jede Änderung ist ein eigenes Dokument:
+       nest/shared/history/{id} = {at, by, area, op, label, …, undone?}
+     Checkliste und Kleidungs-Kategorien: Vor jedem Speichern vergleicht
+     die App den eigenen Stand mit dem zuletzt erfassten (diffTree). Was die
+     andere Person ändert, kommt über die Datenbank und wird dabei in den
+     erfassten Stand übernommen – also nicht noch einmal als eigene Änderung.
+     Kleidungsstücke, Namen, Kontakte, Wehen, Anzeigenamen: direkt beim
+     Speichern. Bewertungen von Namen werden bewusst nicht erfasst (sie sind
+     verdeckt, bis man selbst bewertet hat). Einträge älter als
+     HISTORY_DAYS Tage löscht die App automatisch.
+     ========================================================= */
+  var HISTORY_DAYS = 90;
+  var HISTORY_PAGE = 150;
+  var COALESCE_MS = 3 * 60 * 1000; // weiteres Tippen in dasselbe Feld = derselbe Eintrag
+  var AREA_LABELS = {checklist: "Checkliste", clothing: "Kleidung", names: "Namen", birth: "Geburt", settings: "Einstellungen"};
+  var historyRef = null;
+  var historyEntries = [];
+  var historyLoaded = false;
+  var historyFailed = false;
+  var historyUnsub = null;
+  var historyLimit = HISTORY_PAGE;
+  var historyWho = "all", historyArea = "all";
+  var histTrack = {checklist: null, clothingCats: null}; // zuletzt erfasster Stand
+  var histCoalesce = {};
+  var histMoved = {};   // per Griff verschobene Einträge (für diffTree)
+
+  var TRACKERS = {
+    checklist: {area: "checklist", spec: CHECKLIST_SPEC, top: ["dueDate", "birthDate", "budget"],
+      get: function(){ return state; }, list: function(s){ return s.categories; }},
+    clothingCats: {area: "clothing", spec: CLOTHING_CATS_SPEC, top: [],
+      get: function(){ return clothingCategories; }, list: function(s){ return s; }}
+  };
+
+  function logErr(err){ console.error(err); }
+  function trackSet(kind){
+    var cur = TRACKERS[kind].get();
+    histTrack[kind] = cur ? deepClone(cur) : null;
+  }
+
+  function coalesceKey(e){
+    if (e.op === "kfield" || e.op === "field" || e.op === "doc") return [e.tree, e.op, e.id || "", e.field].join("|");
+    if (e.op === "target") return "target|" + e.key;
+    if (e.op === "cloth-edit" && e.new && Object.keys(e.new).join() === "gewaschen") return "washed|" + e.id;
+    return null;
+  }
+
+  // Schreibt einen Eintrag (ohne auf den Server zu warten – offline wird er
+  // später übertragen). Gibt den Eintrag (mit id) zurück, z. B. für den
+  // „Rückgängig“-Knopf im Hinweis.
+  function writeHistory(e){
+    if (!historyRef || !currentUser) return null;
+    var now = Date.now(), key = coalesceKey(e), prev = key && histCoalesce[key];
+    if (prev && !prev.entry.undone && now - prev.at < COALESCE_MS){
+      prev.at = now;
+      if (sameValue(prev.entry.old, e.new)){
+        // wieder wie vorher (z. B. zweimal abgehakt) → gar kein Eintrag
+        historyRef.doc(prev.entry.hid).delete().catch(logErr);
+        delete histCoalesce[key];
+        return null;
+      }
+      var upd = JSON.parse(JSON.stringify({new: e.new === undefined ? null : e.new, newExtra: e.newExtra, label: e.label, at: now}));
+      historyRef.doc(prev.entry.hid).update(upd).catch(logErr);
+      Object.assign(prev.entry, upd);
+      return prev.entry;
+    }
+    var json = JSON.stringify(Object.assign({}, e, {at: now, by: myUid()}));
+    // Firestore erlaubt max. 1 MB pro Dokument – notfalls ohne Fotos
+    if (json.length > 900000) json = json.replace(/"photo":"[^"]*"/g, '"photo":""');
+    var doc = JSON.parse(json);
+    var ref = historyRef.doc();
+    ref.set(doc).catch(logErr);
+    var entry = Object.assign({}, doc, {hid: ref.id}); // hid = Dokument-ID des Eintrags (id = ID des geänderten Punkts)
+    if (key) histCoalesce[key] = {entry: entry, at: now};
+    return entry;
+  }
+
+  // Eigene, noch nicht erfasste Änderungen an Checkliste bzw. Kleidungs-
+  // Kategorien als Einträge schreiben. Gibt die geschriebenen Einträge zurück.
+  function recordTree(kind){
+    var t = TRACKERS[kind], cur = t.get();
+    if (!cur || !historyRef) return [];
+    var base = histTrack[kind];
+    histTrack[kind] = deepClone(cur);
+    if (!base) return [];
+    var out = [];
+    t.top.forEach(function(f){
+      if (!sameValue(base[f], cur[f])) out.push({op: "doc", field: f, old: base[f] || "", new: cur[f] || ""});
+    });
+    var changes = diffTree(t.list(base), t.list(cur), t.spec, histMoved);
+    histMoved = {};
+    // Viele neue Punkte auf einmal (z. B. ein Vorlagen-Paket) → ein Eintrag
+    var adds = {};
+    changes.forEach(function(c){ if (c.op === "kadd") (adds[c.pid] = adds[c.pid] || []).push(c); });
+    changes.forEach(function(c){
+      if (c.op === "kadd" && adds[c.pid].length >= 4){
+        if (adds[c.pid][0] !== c) return;
+        out.push({op: "kadds", pid: c.pid, plabel: c.plabel, count: adds[c.pid].length,
+          items: adds[c.pid].map(function(x){ return x.data; }), labels: adds[c.pid].slice(0, 5).map(function(x){ return x.label; })});
+        return;
+      }
+      out.push(c);
+    });
+    return out.map(function(c){ return writeHistory(Object.assign({area: t.area, tree: kind}, c)); }).filter(Boolean);
+  }
+  function findRecorded(list, op, id){ return list.filter(function(r){ return r.op === op && r.id === id; })[0] || null; }
+
+  /* ----- Beschreibungen ----- */
+  var CLOTHING_FIELD_LABELS = {ober: "Kategorie", unter: "Unterkategorie", groesse: "Größe", muster: "Muster", farbe: "Farbe",
+    menge: "Menge", herkunft: "Herkunft", von: "von wem", gewaschen: "gewaschen", photo: "Foto"};
+  var CLOTHING_FIELDS = Object.keys(CLOTHING_FIELD_LABELS);
+  function q(s){ s = shorten(s == null ? "" : s, 80); return "„" + (s || "ohne Titel") + "“"; }
+  function shorten(s, n){ s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function dateChange(o, n){ return o && n ? fmtDate(o) + " → " + fmtDate(n) : (n ? fmtDate(n) + " eingetragen" : "entfernt (war " + fmtDate(o) + ")"); }
+  function textChange(o, n){ return o && n ? q(shorten(o, 60)) + " → " + q(shorten(n, 60)) : (n ? q(shorten(n, 60)) + " eingetragen" : q(shorten(o, 60)) + " entfernt"); }
+  function whoName(v){ return v === "beide" ? "beide" : (v ? personName(v) : "niemand"); }
+  function clockTime(ms){ return new Date(ms).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit"}); }
+  function clothingLabel(it){
+    var cat = findClothingCat(it.ober), sub = cat && findClothingSub(cat, it.unter);
+    return [sub ? catLabel(sub.name) : (cat ? catLabel(cat.name) : "Kleidungsstück"), it.groesse, it.farbe].filter(Boolean).join(" · ");
+  }
+  function targetLabel(key){
+    var p = key.split("|"), cat = findClothingCat(p[0]), sub = cat && findClothingSub(cat, p[1]);
+    return (sub ? catLabel(sub.name) : (cat ? catLabel(cat.name) : "?")) + " · " + p[2];
+  }
+
+  function describeHistory(e){
+    var L = q(e.label), P = e.plabel ? q(e.plabel) : "", C = e.tree === "clothingCats";
+    var CAT = C ? "Kleidungs-Kategorie" : "Kategorie";
+    switch (e.op){
+      case "doc":
+        if (e.field === "dueDate") return {text: "Entbindungstermin: " + dateChange(e.old, e.new)};
+        if (e.field === "birthDate") return {text: "Geburtstag: " + dateChange(e.old, e.new)};
+        return {text: "Budget: " + textChange(e.old, e.new)};
+      case "add": return {text: CAT + " " + L + " angelegt"};
+      case "del": return {text: CAT + " " + L + " gelöscht" + (!C && e.count ? " (mit " + plural(e.count, "Punkt", "Punkten") + ")" : "")};
+      case "field": return e.field === "name" ? {text: CAT + " umbenannt: " + textChange(e.old, e.new)} : {text: "Symbol von " + L + " geändert"};
+      case "move": return {text: CAT + " " + L + " verschoben (Stelle " + (e.from + 1) + " → " + (e.to + 1) + ")"};
+      case "kadd": return {text: (C ? "Unterkategorie " : "") + L + " hinzugefügt" + (P ? " in " + P : "")};
+      case "kadds": return {text: plural(e.count, C ? "Unterkategorie" : "Punkt", C ? "Unterkategorien" : "Punkte") + " hinzugefügt in " + P,
+        detail: (e.labels || []).join(", ") + (e.count > (e.labels || []).length ? " …" : "")};
+      case "kdel": return {text: (C ? "Unterkategorie " : "") + L + " gelöscht" + (P ? " (aus " + P + ")" : "")};
+      case "kcat": return {text: (C ? "Unterkategorie " : "") + L + " verschoben: " + q(e.flabel) + " → " + q(e.plabel)};
+      case "kmove": return {text: (C ? "Unterkategorie " : "") + L + " verschoben (Stelle " + (e.from + 1) + " → " + (e.to + 1) + (P ? " in " + P : "") + ")"};
+      case "kfield":
+        switch (e.field){
+          case "title": case "name": return {text: (C ? "Unterkategorie" : "Punkt") + " umbenannt: " + textChange(e.old, e.new)};
+          case "done": return {text: L + (e.new ? " abgehakt" : " wieder als offen markiert")};
+          case "bisWann": return {text: "Frist für " + L + ": " + dateChange(e.old, e.new)};
+          case "wann": return {text: "Termin für " + L + ": " + dateChange(e.old, e.new)};
+          case "wannRepeatWeekly": return {text: L + ": wöchentlich wiederholen " + (e.new ? "an" : "aus")};
+          case "preis": return {text: "Preis für " + L + ": " + textChange(e.old, e.new)};
+          case "notizen": case "zuKlaeren":
+            return {text: (e.field === "notizen" ? "Notizen zu " : "„Zu klären“ bei ") + L + " geändert",
+              detail: (e.old ? "vorher: " + q(shorten(e.old, 90)) : "vorher leer") + " · " + (e.new ? "jetzt: " + q(shorten(e.new, 90)) : "jetzt leer")};
+          case "wer": return {text: "Zuständig für " + L + ": " + whoName(e.old) + " → " + whoName(e.new)};
+          case "links": return {text: "Links bei " + L + " geändert (" + (e.old || []).length + " → " + (e.new || []).length + ")"};
+        }
+        return {text: L + " geändert"};
+      case "cloth-add": return {text: "Kleidungsstück hinzugefügt: " + e.label};
+      case "cloth-del": return {text: "Kleidungsstück gelöscht: " + e.label};
+      case "cloth-edit":
+        var keys = Object.keys(e.new || {});
+        if (keys.join() === "gewaschen") return {text: e.label + ": als " + (e.new.gewaschen ? "gewaschen" : "ungewaschen") + " markiert"};
+        return {text: "Kleidungsstück geändert: " + e.label, detail: keys.map(function(k){
+          var o = (e.old || {})[k], n = e.new[k];
+          if (k === "photo") return n ? (o ? "Foto ersetzt" : "Foto hinzugefügt") : "Foto entfernt";
+          if (k === "gewaschen") return n ? "gewaschen" : "ungewaschen";
+          if (k === "herkunft"){ o = HERKUNFT_LABELS[o] || "–"; n = HERKUNFT_LABELS[n] || "–"; }
+          if (k === "ober"){ var c1 = findClothingCat(o), c2 = findClothingCat(n); o = c1 ? c1.name : o; n = c2 ? c2.name : n; }
+          return CLOTHING_FIELD_LABELS[k] + ": " + (o === "" || o == null ? "–" : o) + " → " + (n === "" || n == null ? "–" : n);
+        }).join(" · ")};
+      case "target": return {text: "Ziel für " + e.label + ": " + e.old + " → " + e.new};
+      case "targets": return {text: plural(e.count, "Zielwert", "Zielwerte") + " für Größe " + e.size + " vorgeschlagen"};
+      case "name-add": return {text: "Name " + L + " hinzugefügt"};
+      case "name-del": return {text: "Name " + L + " gelöscht"};
+      case "contact-add": return {text: "Kontakt " + L + " angelegt"};
+      case "contact-edit": return {text: "Kontakt " + L + " geändert", detail: Object.keys(e.new || {}).map(function(k){
+        return ({label: "Bezeichnung", name: "Name", phone: "Telefon"}[k] || k) + ": " + ((e.old || {})[k] || "–") + " → " + (e.new[k] || "–");
+      }).join(" · ")};
+      case "contact-del": return {text: "Kontakt " + L + " gelöscht"};
+      case "contr-del": return {text: "Wehe von " + e.label + " gelöscht"};
+      case "contr-clear": return {text: "Wehen-Timer geleert (" + plural(e.count, "Eintrag", "Einträge") + ")"};
+      case "displayname": return {text: "Anzeigename für " + e.label + ": " + q(e.old || "aus Google") + " → " + q(e.new || "aus Google")};
+      case "restore": return {text: "Sicherung vom " + e.label + " wiederhergestellt"};
+      case "undo": return {text: "Rückgängig gemacht: " + (e.ofText || "eine Änderung")};
+    }
+    return {text: "Änderung"};
+  }
+
+  /* ----- Rückgängig ----- */
+  var UNDOABLE = {doc: 1, field: 1, add: 1, del: 1, move: 1, kfield: 1, kadd: 1, kadds: 1, kdel: 1, kcat: 1, kmove: 1,
+    "cloth-add": 1, "cloth-del": 1, "cloth-edit": 1, target: 1, targets: 1, "name-add": 1, "name-del": 1,
+    "contact-add": 1, "contact-edit": 1, "contact-del": 1, "contr-del": 1, "contr-clear": 1, displayname: 1};
+  // Diese Einträge legen etwas an – Zurücknehmen heißt also löschen (mit Rückfrage).
+  var REMOVING_UNDO = {add: 1, kadd: 1, kadds: 1, "cloth-add": 1, "name-add": 1, "contact-add": 1};
+  function isRestoreEntry(e){ return /del|clear/.test(e.op); }
+
+  function undoHistoryEntry(e, opts){
+    opts = opts || {};
+    if (!e || !UNDOABLE[e.op]) return;
+    if (e.undone){ toast("Das wurde schon rückgängig gemacht."); return; }
+    var what = describeHistory(e).text;
+    if (!opts.confirmed && REMOVING_UNDO[e.op]){
+      confirmDelete({title: "Wieder entfernen?", html: "Rückgängig machen löscht wieder: <b>" + esc(what) + "</b>.",
+        label: "Entfernen", onConfirm: function(){ undoHistoryEntry(e, {confirmed: true}); }});
+      return;
+    }
+    var r = applyUndo(e, !!opts.force);
+    if (r.ok){ finishUndo(e, what); return; }
+    if (r.reason === "changed"){
+      openModal({
+        title: "Inzwischen noch einmal geändert",
+        body: "<p>" + esc(what) + "</p><p>Das wurde danach noch einmal geändert" +
+          (r.current != null && typeof r.current !== "object" ? " (jetzt: <b>" + esc(undoValueText(e, r.current)) + "</b>)" : "") +
+          ". Trotzdem auf den Stand davor zurücksetzen?</p>",
+        buttons: [{label: "Abbrechen", cls: "btn-ghost"},
+          {label: "Trotzdem zurücksetzen", cls: "btn-primary", onClick: function(){ closeModal(); undoHistoryEntry(e, {confirmed: true, force: true}); }}]
+      });
+      return;
+    }
+    if (r.reason === "exists") markUndone(e);
+    toast({
+      gone: "Das gibt es nicht mehr – nichts zurückzunehmen.",
+      exists: "Das ist bereits wieder da.",
+      parentGone: "Die Kategorie " + q(e.plabel || e.flabel) + " gibt es nicht mehr – bitte zuerst sie wiederherstellen.",
+      hasClothing: "In dieser Kategorie liegen inzwischen Kleidungsstücke – sie wird deshalb nicht gelöscht.",
+      busy: "Die Daten werden noch geladen – bitte kurz warten."
+    }[r.reason] || "Rückgängig machen war nicht möglich.");
+  }
+
+  function undoValueText(e, v){
+    if (v === "" || v == null) return "leer";
+    if (e.field === "bisWann" || e.field === "wann" || (e.op === "doc" && e.field !== "budget")) return fmtDate(v);
+    if (e.field === "wer") return whoName(v);
+    if (typeof v === "boolean") return v ? "ja" : "nein";
+    return shorten(String(v), 60);
+  }
+
+  function applyUndo(e, force){
+    var ok = {ok: true}, gone = {ok: false, reason: "gone"}, exists = {ok: false, reason: "exists"}, busy = {ok: false, reason: "busy"};
+    var changed = {ok: false, reason: "changed"}, r;
+    if (e.tree === "checklist"){
+      if (!state) return busy;
+      recordTree("checklist"); // eigene, noch nicht erfasste Änderungen zuerst
+      if (e.op === "doc"){
+        if (!force && !sameValue(state[e.field] || "", e.new)) return {ok: false, reason: "changed", current: state[e.field] || ""};
+        state[e.field] = e.old;
+        r = ok;
+      } else r = undoTreeChange(state.categories, e, CHECKLIST_SPEC, force);
+      if (r.ok){ trackSet("checklist"); render(); schedulePublish(150); viewDirty.baby = true; viewDirty.birth = true; }
+      return r;
+    }
+    if (e.tree === "clothingCats"){
+      if (!clothingCatsConfirmed) return busy;
+      recordTree("clothingCats");
+      if ((e.op === "add" && countClothingIn(e.id) > 0) || (e.op === "kadd" && countClothingIn(e.pid, e.id) > 0)) return {ok: false, reason: "hasClothing"};
+      r = undoTreeChange(clothingCategories, e, CLOTHING_CATS_SPEC, force);
+      if (r.ok){ trackSet("clothingCats"); renderBabySafe(); scheduleClothingCategoriesPublish(150); }
+      return r;
+    }
+    var data;
+    switch (e.op){
+      case "cloth-add":
+        if (!clothingColRef) return busy;
+        if (!findClothingItem(e.id)) return gone;
+        trackSave(clothingColRef.doc(e.id).delete()).catch(logErr);
+        return ok;
+      case "cloth-del":
+        if (!clothingColRef) return busy;
+        if (findClothingItem(e.id)) return exists;
+        data = Object.assign({}, e.data);
+        delete data.id;
+        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        trackSave(clothingColRef.doc(e.id).set(data)).catch(logErr);
+        return ok;
+      case "cloth-edit":
+        var it = findClothingItem(e.id);
+        if (!it || !clothingColRef) return gone;
+        if (!force && Object.keys(e.new || {}).some(function(k){ return !sameValue(it[k], e.new[k]); })) return changed;
+        trackSave(clothingColRef.doc(e.id).update(e.old)).catch(logErr);
+        Object.assign(it, e.old);
+        renderBabySafe();
+        return ok;
+      case "target":
+        if (!force && (clothingTargets[e.key] || 0) !== e.new) return {ok: false, reason: "changed", current: clothingTargets[e.key] || 0};
+        setClothingTarget(e.key, e.old, true);
+        renderBabySafe();
+        return ok;
+      case "targets":
+        Object.keys(e.changes || {}).forEach(function(k){
+          if (force || (clothingTargets[k] || 0) === e.changes[k][1]) setClothingTarget(k, e.changes[k][0], true);
+        });
+        renderBabySafe();
+        return ok;
+      case "name-add":
+        if (!namesRef) return busy;
+        if (!babyNames.some(function(n){ return n.id === e.id; })) return gone;
+        trackSave(namesRef.doc(e.id).delete()).catch(logErr);
+        return ok;
+      case "name-del":
+        if (!namesRef) return busy;
+        if (babyNames.some(function(n){ return n.id === e.id; })) return exists;
+        data = e.data || {};
+        trackSave(namesRef.doc(e.id).set({name: data.name || e.label, gender: data.gender || "n", note: data.note || "", votes: data.votes || {},
+          createdBy: data.createdBy || "", createdAt: firebase.firestore.Timestamp.fromMillis(data.created || Date.now())})).catch(logErr);
+        return ok;
+      case "contact-add":
+        if (!contactsRef) return busy;
+        if (!contacts.some(function(c){ return c.id === e.id; })) return gone;
+        trackSave(contactsRef.doc(e.id).delete()).catch(logErr);
+        return ok;
+      case "contact-edit":
+        var ct = contacts.filter(function(c){ return c.id === e.id; })[0];
+        if (!ct) return gone;
+        if (!force && Object.keys(e.new || {}).some(function(k){ return ct[k] !== e.new[k]; })) return changed;
+        trackSave(contactsRef.doc(e.id).update(e.old)).catch(logErr);
+        return ok;
+      case "contact-del":
+        if (!contactsRef) return busy;
+        if (contacts.some(function(c){ return c.id === e.id; })) return exists;
+        data = Object.assign({}, e.data);
+        delete data.id;
+        trackSave(contactsRef.doc(e.id).set(data)).catch(logErr);
+        return ok;
+      case "contr-del":
+        if (!contractionsRef) return busy;
+        if (contractions.some(function(c){ return c.id === e.id; })) return exists;
+        trackSave(contractionsRef.doc(e.id).set({start: e.data.start, end: e.data.end == null ? null : e.data.end, by: e.data.by || ""})).catch(logErr);
+        return ok;
+      case "contr-clear":
+        if (!contractionsRef) return busy;
+        var b = firebase.firestore().batch(), ref = contractionsRef;
+        (e.items || []).forEach(function(c){ b.set(ref.doc(c.id), {start: c.start, end: c.end == null ? null : c.end, by: c.by || ""}); });
+        trackSave(b.commit()).catch(logErr);
+        return ok;
+      case "displayname":
+        if (!docRef) return busy;
+        var cur = (members[e.uid] && members[e.uid].displayName) || "";
+        if (!force && cur !== (e.new || "")) return {ok: false, reason: "changed", current: cur};
+        var upd = {};
+        upd[e.uid] = {displayName: e.old || firebase.firestore.FieldValue.delete()};
+        trackSave(docRef.collection("meta").doc("members").set(upd, {merge: true})).catch(logErr);
+        members[e.uid] = Object.assign({email: "", name: ""}, members[e.uid], {displayName: e.old || ""});
+        updateAccountButton();
+        renderChecklistSafe();
+        return ok;
+    }
+    return {ok: false, reason: "unknown"};
+  }
+
+  function markUndone(e){
+    var u = {by: myUid(), at: Date.now()};
+    e.undone = u;
+    Object.keys(histCoalesce).forEach(function(k){ if (histCoalesce[k].entry.hid === e.hid) delete histCoalesce[k]; });
+    if (historyRef && e.hid) historyRef.doc(e.hid).update({undone: u}).catch(logErr);
+  }
+  function finishUndo(e, what){
+    markUndone(e);
+    writeHistory({area: e.area, op: "undo", of: e.hid, ofText: what, ofBy: e.by});
+    if (mainView === "history") renderHistory();
+    toast("Rückgängig gemacht: " + what);
+  }
+
+  /* ----- Rückfrage vor dem Löschen ----- */
+  function confirmDelete(o){
+    openModal({
+      title: o.title,
+      body: "<p>" + o.html + "</p>" + (o.hint === false ? "" : '<p class="muted">Im Verlauf (Konto-Menü → „Verlauf“) lässt es sich wiederherstellen.</p>'),
+      buttons: [{label: "Abbrechen", cls: "btn-ghost"},
+        {label: o.label || "Löschen", cls: "btn-danger", onClick: function(){ closeModal(); o.onConfirm(); }}]
+    });
+    // Abbrechen vorauswählen – Enter löscht also nicht versehentlich.
+    var cancel = document.querySelector('#modal [data-modal-btn="0"]');
+    if (cancel) cancel.focus();
+  }
+
+  /* ----- Ansicht „Verlauf“ ----- */
+  function subscribeHistory(){
+    if (historyUnsub || !historyRef) return;
+    historyUnsub = historyRef.orderBy("at", "desc").limit(historyLimit).onSnapshot(function(snap){
+      historyEntries = snap.docs.map(function(d){ return Object.assign({}, d.data(), {hid: d.id}); });
+      historyLoaded = true; historyFailed = false;
+      renderViewSafe("history");
+    }, function(err){
+      console.error(err);
+      historyLoaded = true; historyFailed = true;
+      renderViewSafe("history");
+    });
+  }
+  function unsubscribeHistory(){ if (historyUnsub){ historyUnsub(); historyUnsub = null; } }
+
+  function historyDayLabel(ms){
+    var d = new Date(ms), today = new Date();
+    var key = isoDate(d), t = isoDate(today);
+    var y = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    if (key === t) return "Heute";
+    if (key === isoDate(y)) return "Gestern";
+    return d.toLocaleDateString("de-DE", {weekday: "long", day: "numeric", month: "long"});
+  }
+
+  function historyRowHtml(e){
+    var d = describeHistory(e);
+    var canUndo = UNDOABLE[e.op] && !e.undone;
+    return '<div class="hist-row' + (e.undone ? ' undone' : '') + '">' +
+      avatarHtml(e.by) +
+      '<div class="hist-main">' +
+        '<div class="hist-text"><b>' + esc(personName(e.by)) + '</b> · ' + esc(d.text) + '</div>' +
+        (d.detail ? '<div class="hist-detail">' + esc(d.detail) + '</div>' : '') +
+        '<div class="hist-meta">' + esc(clockTime(e.at)) + ' · ' + esc(AREA_LABELS[e.area] || "") +
+          (e.undone ? ' · rückgängig gemacht von ' + esc(personName(e.undone.by)) + ' (' + esc(historyDayLabel(e.undone.at) === "Heute" ? clockTime(e.undone.at) : fmtDate(isoDate(new Date(e.undone.at)))) + ')' : '') + '</div>' +
+      '</div>' +
+      (canUndo ? '<button class="btn btn-soft btn-sm hist-undo" data-action="hist-undo" data-hid="' + escAttr(e.hid) + '">' + icon("undo") + (isRestoreEntry(e) ? ' Wiederherstellen' : ' Rückgängig') + '</button>' : '') +
+    '</div>';
+  }
+
+  function renderHistory(){
+    viewDirty.history = false;
+    var el = document.getElementById("historyView");
+    var cutoff = Date.now() - HISTORY_DAYS * 864e5;
+    var list = historyEntries.filter(function(e){
+      return typeof e.at === "number" && e.at >= cutoff &&
+        (historyWho === "all" || e.by === historyWho) && (historyArea === "all" || e.area === historyArea);
+    });
+    var whoChips = [{k: "all", l: "Alle"}].concat(memberList().map(function(m){ return {k: m.uid, l: firstName(m)}; }));
+    var areaChips = [{k: "all", l: "Alle Bereiche"}].concat(Object.keys(AREA_LABELS).map(function(k){ return {k: k, l: AREA_LABELS[k]}; }));
+    var chip = function(action, c, active){
+      return '<button class="fchip' + (active ? ' active' : '') + '" data-action="' + action + '" data-k="' + escAttr(c.k) + '" aria-pressed="' + active + '">' + esc(c.l) + '</button>';
+    };
+    var rows = "", day = "";
+    list.forEach(function(e){
+      var dl = historyDayLabel(e.at);
+      if (dl !== day){ day = dl; rows += '<div class="hist-day">' + esc(dl) + '</div>'; }
+      rows += historyRowHtml(e);
+    });
+    var body;
+    if (!historyLoaded) body = '<div class="empty-cat">Verlauf wird geladen …</div>';
+    else if (historyFailed) body = '<div class="empty-cat">Der Verlauf konnte nicht geladen werden.</div>';
+    else if (!rows) body = historyEntries.length
+      ? '<div class="empty-cat">Keine Änderungen in dieser Auswahl.</div>'
+      : '<div class="empty-state"><span aria-hidden="true">🕰️</span><b>Noch keine Änderungen aufgezeichnet</b><p>Ab jetzt erscheint hier jede Änderung – mit Person, Uhrzeit und einem Knopf zum Zurücknehmen.</p></div>';
+    else body = rows;
+    el.innerHTML =
+      '<div class="card">' +
+        '<div class="card-head"><h2>Verlauf</h2></div>' +
+        '<p class="muted">Wer hat wann was geändert – die letzten ' + HISTORY_DAYS + ' Tage. Mit „Rückgängig“ bzw. „Wiederherstellen“ nehmt ihr eine Änderung zurück; auch das steht danach hier.</p>' +
+        '<div class="chips" role="group" aria-label="Person">' + whoChips.map(function(c){ return chip("hist-who", c, historyWho === c.k); }).join("") + '</div>' +
+        '<div class="chips" role="group" aria-label="Bereich">' + areaChips.map(function(c){ return chip("hist-area", c, historyArea === c.k); }).join("") + '</div>' +
+      '</div>' +
+      '<div class="category hist-list">' + body + '</div>' +
+      (historyLoaded && historyEntries.length >= historyLimit ? '<button class="btn btn-soft hist-more" data-action="hist-more">Ältere Einträge laden</button>' : '');
+  }
+
+  function wireHistoryEvents(){
+    document.getElementById("historyView").addEventListener("click", function(e){
+      var t = e.target.closest("[data-action]");
+      if (!t) return;
+      var a = t.getAttribute("data-action");
+      if (a === "hist-who"){ historyWho = t.getAttribute("data-k"); renderHistory(); }
+      else if (a === "hist-area"){ historyArea = t.getAttribute("data-k"); renderHistory(); }
+      else if (a === "hist-more"){ historyLimit += HISTORY_PAGE; unsubscribeHistory(); subscribeHistory(); }
+      else if (a === "hist-undo"){
+        var hid = t.getAttribute("data-hid");
+        undoHistoryEntry(historyEntries.filter(function(x){ return x.hid === hid; })[0]);
+      }
+    });
+  }
+
+  // Einmal am Tag (je Gerät): Einträge älter als HISTORY_DAYS löschen.
+  var PRUNE_KEY = "unsernest-verlauf-aufgeraeumt";
+  function pruneHistory(){
+    if (!historyRef || navigator.onLine === false) return;
+    var today = todayIso();
+    try { if (localStorage.getItem(PRUNE_KEY) === today) return; } catch (e){}
+    var mark = function(){ try { localStorage.setItem(PRUNE_KEY, today); } catch (e){} };
+    var cutoff = Date.now() - HISTORY_DAYS * 864e5;
+    historyRef.where("at", "<", cutoff).limit(300).get().then(function(snap){
+      if (snap.empty){ mark(); return; }
+      var b = firebase.firestore().batch();
+      snap.docs.forEach(function(d){ b.delete(d.ref); });
+      return b.commit().then(mark);
+    }).catch(logErr);
+  }
+
+  // Für die Sicherung: der ganze Verlauf (ohne Fotos)
+  function loadHistoryForBackup(){
+    if (!historyRef) return Promise.resolve([]);
+    return historyRef.orderBy("at", "desc").limit(5000).get().then(function(snap){
+      return snap.docs.map(function(d){ return Object.assign({}, d.data(), {hid: d.id}); });
+    }).catch(function(err){ console.error(err); return []; });
+  }
+
+  /* =========================================================
      ANSICHTEN, NAVIGATION, DIALOGE
      ========================================================= */
 
-  var VIEW_ELEMENTS = {checklist:"checklistView", baby:"babyView", names:"namesView", birth:"birthView"};
+  var VIEW_ELEMENTS = {checklist:"checklistView", baby:"babyView", names:"namesView", birth:"birthView", history:"historyView"};
   var VIEW_RENDER = {
     checklist: function(){ render(); },
     baby: function(){ renderBaby(); },
     names: function(){ renderNames(); },
-    birth: function(){ renderBirth(); }
+    birth: function(){ renderBirth(); },
+    history: function(){ renderHistory(); }
   };
 
   // Neu zeichnen, wenn Daten aus der Datenbank kommen – aber nicht, solange
@@ -4900,6 +5665,8 @@
       tabs[i].classList.toggle("active", on);
       if (on) tabs[i].setAttribute("aria-current", "page"); else tabs[i].removeAttribute("aria-current");
     }
+    // Verlauf nur laden, solange er angezeigt wird
+    if (view === "history") subscribeHistory(); else unsubscribeHistory();
     if (!fromHash && location.hash !== "#" + VIEW_HASH[view]){
       try { history.replaceState(null, "", "#" + VIEW_HASH[view]); } catch (e){}
     }
@@ -5043,7 +5810,8 @@
      SICHERUNG (Export als ZIP) & WIEDERHERSTELLEN
      ========================================================= */
 
-  function buildBackupFiles(){
+  function buildBackupFiles(history){
+    history = history || [];
     var enc = new TextEncoder();
     var files = [];
     var yn = function(b){ return b ? "ja" : "nein"; };
@@ -5095,14 +5863,24 @@
       names: babyNames.map(function(n){ return {id: n.id, name: n.name, gender: n.gender, note: n.note, votes: n.votes, createdBy: n.createdBy}; }),
       contacts: contacts.map(function(c){ return {id: c.id, label: c.label, name: c.name, phone: c.phone, note: c.note, order: c.order}; }),
       contractions: contractions.map(function(c){ return {id: c.id, start: c.start, end: c.end, by: c.by}; }),
-      members: members
+      members: members,
+      // Verlauf der letzten Tage (Fotos gelöschter Kleidungsstücke nicht noch einmal)
+      history: JSON.parse(JSON.stringify(history).replace(/"photo":"[^"]*"/g, '"photo":""'))
     };
+    var histRows = [["Datum","Uhrzeit","Person","Bereich","Änderung","Details","Rückgängig gemacht"]];
+    history.forEach(function(e){
+      if (typeof e.at !== "number") return;
+      var dsc = describeHistory(e);
+      histRows.push([fmtDate(isoDate(new Date(e.at))), clockTime(e.at), personName(e.by), AREA_LABELS[e.area] || "", dsc.text, dsc.detail || "",
+        e.undone ? "ja, von " + personName(e.undone.by) : ""]);
+    });
     var readme = [
       "Unser Nest – Sicherung vom " + fmtDate(todayIso()),
       "",
       "checkliste.csv         Alle Punkte der Checkliste (öffnen mit Excel/LibreOffice).",
       "kleidung.csv           Alle erfassten Kleidungsstücke; Spalte \"Foto\" verweist auf die Bilddatei.",
       "namen.csv              Eure Namensliste mit Bewertungen.",
+      "verlauf.csv            Wer hat wann was geändert (die letzten " + HISTORY_DAYS + " Tage).",
       "fotos/                 Die Fotos der Kleidungsstücke als JPG.",
       "unser-nest-daten.json  Vollständiger Datenstand (inkl. Kategorien, Zielwerten, Kontakten).",
       "",
@@ -5116,6 +5894,7 @@
       {name: "checkliste.csv", data: enc.encode(csvText(checkRows))},
       {name: "kleidung.csv", data: enc.encode(csvText(clothRows))},
       {name: "namen.csv", data: enc.encode(csvText(nameRows))},
+      {name: "verlauf.csv", data: enc.encode(csvText(histRows))},
       {name: "unser-nest-daten.json", data: enc.encode(JSON.stringify(data, null, 2))}
     );
     return {files: files, counts: {items: checkRows.length - 1, clothing: itemsJson.length, photos: itemsJson.filter(function(i){ return i.photoFile; }).length, names: babyNames.length}};
@@ -5124,8 +5903,8 @@
   function exportBackup(silent){
     if (!state){ toast("Die Daten werden noch geladen – bitte kurz warten."); return Promise.reject(new Error("nicht geladen")); }
     // Erst noch ausstehende Eingaben speichern, damit Datei und Datenbank übereinstimmen.
-    return flushPending().then(function(){
-      var b = buildBackupFiles();
+    return flushPending().then(loadHistoryForBackup).then(function(history){
+      var b = buildBackupFiles(history);
       downloadFile("unser-nest-sicherung-" + todayIso() + ".zip", buildZipParts(b.files, new Date()), "application/zip");
       if (!silent) toast("Sicherung erstellt: " + plural(b.counts.items, "Punkt", "Punkte") + ", " + plural(b.counts.clothing, "Kleidungsstück", "Kleidungsstücke") + ", " + plural(b.counts.photos, "Foto", "Fotos") + ", " + plural(b.counts.names, "Name", "Namen") + ".");
     }).catch(function(err){
@@ -5203,10 +5982,15 @@
 
   function applyRestore(d, checklist, photos){
     var db = firebase.firestore();
+    // Verlauf: Eigenes vorher noch erfassen; das Ersetzen selbst ist EIN Eintrag.
+    recordTree("checklist");
+    recordTree("clothingCats");
+    writeHistory({area: "settings", op: "restore", label: d.exportedAt ? new Date(d.exportedAt).toLocaleString("de-DE", {dateStyle: "medium", timeStyle: "short"}) : "unbekannt"});
     // Checkliste: bewusst ohne Zusammenführen ersetzen.
     clearTimeout(publishTimer); publishTimer = null;
     state = checklist;
     baseState = deepClone(checklist);
+    trackSet("checklist");
     var writes = [docRef.set(checklistDocData(checklist))];
     render();
 
@@ -5216,6 +6000,7 @@
       clearTimeout(clothingCategoriesTimer); clothingCategoriesTimer = null;
       clothingCategories = cats;
       clothingCategoriesBase = cloneClothingCategories(cats);
+      trackSet("clothingCats");
       writes.push(clothingCategoriesRef.set(clothingCategoriesDoc(cats)));
     }
     if (cl.targets && typeof cl.targets === "object"){
@@ -5283,6 +6068,7 @@
     menu.innerHTML = '' +
       '<div class="menu-head"><b>' + esc(currentUser ? firstName(members[myUid()] || {name: currentUser.displayName, email: currentUser.email}) : "") + '</b><span>' + esc(currentUser ? currentUser.email : "") + '</span>' +
         (list.length ? '<span>Gemeinsam mit ' + esc(list.map(firstName).join(", ")) + '</span>' : '') + '</div>' +
+      '<button class="menu-item" role="menuitem" data-menu="history">' + icon("history") + ' Verlauf – wer hat was geändert</button>' +
       '<button class="menu-item" role="menuitem" data-menu="names">' + icon("user") + ' Anzeigenamen ändern …</button>' +
       (deferredInstallPrompt ? '<button class="menu-item" role="menuitem" data-menu="install">' + icon("install") + ' Als App installieren</button>' : '') +
       '<button class="menu-item" role="menuitem" data-menu="ics">' + icon("calendarPlus") + ' Termine in den Kalender</button>' +
@@ -5334,6 +6120,7 @@
       else if (a === "print"){ setMainView("checklist"); setTimeout(function(){ window.print(); }, 50); }
       else if (a === "install") promptInstall();
       else if (a === "names") openDisplayNameDialog();
+      else if (a === "history"){ setMainView("history"); window.scrollTo({top: 0}); }
       else if (a === "signout") signOut();
     });
     document.getElementById("restoreInput").addEventListener("change", function(e){
@@ -5376,6 +6163,7 @@
       if (v === old) return;
       // merge: nur dieses eine Feld schreiben; leer → Feld entfernen (= Google-Name)
       upd[id] = {displayName: v || firebase.firestore.FieldValue.delete()};
+      writeHistory({area: "settings", op: "displayname", uid: id, label: googleFirstName(members[id] || {}), old: old, new: v});
       members[id] = Object.assign({email: "", name: ""}, members[id], {displayName: v});
       changed++;
     });
@@ -5487,6 +6275,7 @@
     wireBabyEvents();
     wireNamesEvents();
     wireBirthEvents();
+    wireHistoryEvents();
     wireAccountMenu();
     var cv = document.getElementById("checklistView");
     cv.addEventListener("click", handleClick);
@@ -5613,6 +6402,7 @@
     subscribeBirth();
     setMainView(viewFromHash(), true);
     showInstallBanner();
+    setTimeout(pruneHistory, 8000); // alte Verlaufseinträge aufräumen (nicht beim Start bremsen)
   }
 
   function denyAccess(){
@@ -5658,6 +6448,11 @@
     document.getElementById("namesView").innerHTML = "";
     document.getElementById("birthView").innerHTML = "";
     contractionsRef = null; contractions = []; contactsRef = null; contacts = []; contactEditingId = null;
+    unsubscribeHistory();
+    historyRef = null; historyEntries = []; historyLoaded = false; historyFailed = false; historyLimit = HISTORY_PAGE;
+    historyWho = "all"; historyArea = "all";
+    histTrack = {checklist: null, clothingCats: null}; histCoalesce = {}; histMoved = {};
+    document.getElementById("historyView").innerHTML = "";
     migratedSizeItemIds = {};
     migratedSizeTargetsDone = false;
     setAuthStatus("");

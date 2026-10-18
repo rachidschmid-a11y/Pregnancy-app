@@ -19,7 +19,7 @@ function loadHelpers(){
     "mergeFields","mergeOrder","mergeTree","mergeChecklist","mergeClothingCategories","parsePrice","fmtMoney",
     "pregnancyInfo","babyAge","sizeTimeframe","suggestTargets","contractionStats","fmtDuration","buildIcs","icsFold",
     "csvCell","csvText","slug","crc32","buildZipParts","parseZip","base64ToBytes","bytesToBase64","extrasFromState","restoreV2Fields",
-    "placeEntry","neighborMove"];
+    "placeEntry","neighborMove","movedIds","diffTree","undoTreeChange","CHECKLIST_SPEC","CLOTHING_CATS_SPEC"];
   const code = html.slice(start, end) + "\n;({" + names.join(",") + "});";
   const ctx = vm.createContext({TextEncoder, TextDecoder, Blob, Response, DecompressionStream, atob, btoa, Uint8Array, DataView, ArrayBuffer, Uint32Array, Promise, Date, Math, JSON});
   return vm.runInContext(code, ctx);
@@ -283,4 +283,104 @@ test("Verschieben: eins nach oben/unten überspringt ausgeblendete Punkte", () =
   assert.equal(H.neighborMove(visible(), d, 1), null, "letzter sichtbarer Punkt");
   assert.equal(H.placeEntry(list, a, H.neighborMove(visible(), a, 1)), true);
   assert.equal(names(list), "cbda", "a springt über das ausgeblendete b hinter d");
+});
+
+
+// ---------- Verlauf: Änderungen erkennen und zurücknehmen ----------
+const SPEC = () => H.CHECKLIST_SPEC;
+// wie in der App: jeder Punkt hat "erledigt von/am" (leer, solange offen)
+const it2 = (id, title) => item(id, title, {preis: "", doneBy: "", doneAt: ""});
+function tree(){ return H.deepClone([
+  cat("c1", "Klinik", [it2("i1", "eins"), it2("i2", "zwei"), it2("i3", "drei")]),
+  cat("c2", "Behörden", [it2("i4", "vier")]),
+  cat("c3", "Sonstiges", [])
+]); }
+const titles = (l) => l.map((c) => c.name + ":" + c.items.map((i) => i.title).join(",")).join(" | ");
+// Änderung erkennen, zurücknehmen, und prüfen, dass wieder der alte Stand herauskommt
+function roundTrip(change){
+  const before = tree();
+  const after = tree();
+  change(after);
+  const diff = H.diffTree(before, after, SPEC());
+  const undone = H.deepClone(after);
+  diff.slice().reverse().forEach((ch) => assert.equal(H.undoTreeChange(undone, ch, SPEC()).ok, true, JSON.stringify(ch)));
+  assert.deepEqual(plain(undone), plain(before));
+  return plain(diff);
+}
+
+test("Verlauf: Feldänderung wird erkannt und zurückgenommen", () => {
+  const d = roundTrip((t) => { t[0].items[1].bisWann = "2026-11-15"; t[0].items[1].done = true; t[0].items[1].doneBy = "u1"; t[0].items[1].doneAt = "2026-10-18"; });
+  assert.deepEqual(d.map((c) => c.op + ":" + c.field), ["kfield:done", "kfield:bisWann"]);
+  const done = d.find((c) => c.field === "done");
+  assert.equal(done.label, "zwei");
+  assert.equal(done.plabel, "Klinik");
+  assert.deepEqual(done.oldExtra, {doneBy: "", doneAt: ""});
+  assert.deepEqual(done.newExtra, {doneBy: "u1", doneAt: "2026-10-18"});
+});
+
+test("Verlauf: gelöschter Punkt kommt an dieselbe Stelle zurück", () => {
+  const d = roundTrip((t) => { t[0].items.splice(1, 1); });
+  assert.deepEqual(d.map((c) => c.op), ["kdel"]);
+  assert.equal(d[0].next, "i3");
+  // auch wenn inzwischen oben ein Punkt dazukam
+  const now = tree(); now[0].items.splice(1, 1); now[0].items.unshift(item("n1", "neu"));
+  assert.equal(H.undoTreeChange(now, d[0], SPEC()).ok, true);
+  assert.equal(titles(plain(now)).split(" | ")[0], "Klinik:neu,eins,zwei,drei");
+});
+
+test("Verlauf: neuer Punkt, Verschieben innerhalb und zwischen Kategorien", () => {
+  assert.deepEqual(roundTrip((t) => { t[1].items.push(item("n1", "neu")); }).map((c) => c.op), ["kadd"]);
+  const mv = roundTrip((t) => { const x = t[0].items.splice(0, 1)[0]; t[0].items.push(x); });
+  assert.deepEqual(mv.map((c) => c.op + ":" + c.id + ":" + c.from + "→" + c.to), ["kmove:i1:0→2"]);
+  const kc = roundTrip((t) => { const x = t[0].items.splice(1, 1)[0]; t[2].items.push(x); });
+  assert.deepEqual(kc.map((c) => c.op + ":" + c.flabel + "→" + c.plabel), ["kcat:Klinik→Sonstiges"]);
+});
+
+test("Verlauf: Kategorien anlegen, löschen, umbenennen, verschieben", () => {
+  const del = roundTrip((t) => { t.splice(0, 1); });
+  assert.deepEqual(del.map((c) => c.op + ":" + c.count), ["del:3"], "Punkte stecken im Eintrag der Kategorie");
+  assert.deepEqual(roundTrip((t) => { t.push(cat("c9", "Neu", [item("n2", "x")])); }).map((c) => c.op), ["add"]);
+  assert.deepEqual(roundTrip((t) => { t[1].name = "Ämter"; }).map((c) => c.op + ":" + c.old + "→" + c.new), ["field:Behörden→Ämter"]);
+  assert.deepEqual(roundTrip((t) => { t.push(t.shift()); }).map((c) => c.op + ":" + c.label), ["move:Klinik"]);
+});
+
+test("Verlauf: nichts überschreiben, was danach noch einmal geändert wurde", () => {
+  const before = tree(), after = tree();
+  after[0].items[0].preis = "50 €";
+  const ch = H.diffTree(before, after, SPEC())[0];
+  after[0].items[0].preis = "60 €"; // danach noch einmal geändert
+  const r = H.undoTreeChange(after, ch, SPEC());
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "changed");
+  assert.equal(r.current, "60 €");
+  assert.equal(H.undoTreeChange(after, ch, SPEC(), true).ok, true, "mit Nachfrage (force) geht es");
+  assert.equal(after[0].items[0].preis, "");
+  // gelöschter Punkt ist schon wieder da → nichts doppelt einfügen
+  const b2 = tree(), a2 = tree(); a2[1].items = [];
+  const del = H.diffTree(b2, a2, SPEC())[0];
+  assert.equal(H.undoTreeChange(b2, del, SPEC()).reason, "exists");
+});
+
+test("Verlauf: auch für die Kategorien der Baby-Kleidung", () => {
+  const S = H.CLOTHING_CATS_SPEC;
+  const before = [{key: "ober", name: "Oberteile", icon: "shirt", subs: [{key: "body", name: "Body"}, {key: "shirt", name: "Shirt"}]}];
+  const after = H.deepClone(before);
+  after[0].subs.reverse(); after[0].subs.push({key: "pulli", name: "Pulli"}); after[0].name = "Oben";
+  const d = plain(H.diffTree(before, after, S));
+  assert.deepEqual(d.map((c) => c.op).sort(), ["field", "kadd", "kmove"]);
+  const undone = H.deepClone(after);
+  d.slice().reverse().forEach((ch) => assert.equal(H.undoTreeChange(undone, ch, S).ok, true));
+  assert.deepEqual(plain(undone), before);
+});
+
+test("Verlauf: Verschiebe-Erkennung meldet nur die bewegten Einträge", () => {
+  assert.deepEqual(plain(H.movedIds(["a","b","c","d","e"], ["a","c","d","e","b"])), ["b"]);
+  assert.deepEqual(plain(H.movedIds(["a","b","c"], ["a","b","c"])), []);
+  assert.deepEqual(plain(H.movedIds(["a","b","c"], ["x","a","c"])), [], "neue/gelöschte zählen nicht als verschoben");
+});
+
+test("Verlauf: beim Tausch zweier Nachbarn gilt der gezogene Eintrag als verschoben", () => {
+  assert.deepEqual(plain(H.movedIds(["a","b"], ["b","a"])), ["a"]);
+  assert.deepEqual(plain(H.movedIds(["a","b"], ["b","a"], {b: true})), ["b"]);
+  assert.deepEqual(plain(H.movedIds(["a","b","c","d"], ["a","d","b","c"], {d: true})), ["d"]);
 });

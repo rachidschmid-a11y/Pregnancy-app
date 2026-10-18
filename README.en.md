@@ -51,7 +51,8 @@ development, and deployment.
 | ⏱️ **Birth** | **Contraction timer**, live on both devices, with an analysis of the last hour; important phone numbers with a call button; hospital bag progress from the checklist |
 | 🔄 **Collaboration** | Real-time sync; simultaneous changes are **merged** instead of overwritten; **custom display names** (e.g. nicknames) independent of the Google profile |
 | 📴 **Offline & app** | Offline storage for data and app; installable as an app (Android, iPhone, desktop) |
-| 💾 **Backup** | Export as ZIP (CSV files, photos, full JSON) and restore from it |
+| 🕰️ **History** | Who changed what and when (last 90 days), filter by person and area, **undo** / **restore** per entry; **confirmation before every delete** |
+| 💾 **Backup** | Export as ZIP (CSV files incl. history, photos, full JSON) and restore from it |
 | 🔒 **Access control** | Sign-in with Google only, and only for approved, verified addresses — enforced on the server |
 
 ---
@@ -390,8 +391,8 @@ npm test       # = node --test tests/*.test.js
 The tests read the section "REINE HILFSFUNKTIONEN" (pure helper functions)
 directly from `public/index.html` and check it with Node — without a browser,
 without Firebase and without extra packages, so no credentials are needed.
-The 24 tests cover merging simultaneous changes, compatibility with
-version 1, moving items, price parsing, week of pregnancy, season per size, target
+The 32 tests cover merging simultaneous changes, compatibility with
+version 1, moving items, the history (detecting and undoing changes), price parsing, week of pregnancy, season per size, target
 suggestions, contraction analysis, calendar export, CSV protection, and
 writing and reading ZIP files. The user interface itself is tried out with
 the emulator (step 3.4).
@@ -411,6 +412,7 @@ the emulator (step 3.4).
 | `nest/shared/contractions/{id}` | Contractions | `start`, `end` (milliseconds), `by` |
 | `nest/shared/meta/members` | Signed-in people (for "assignee" etc.) | per user ID: `email`, `name` (from Google), `displayName` (chosen in the app, optional) |
 | `nest/shared/meta/checklistExtras` | Copy of the fields only version 2 knows | `items{}` with `wer`, `doneBy`, `doneAt`; `budget`, `birthDate` |
+| `nest/shared/history/{id}` | History (one change per document, 90 days) | `at`, `by`, `area`, `op`, `label`, `old`/`new` or `data`, `undone` |
 
 Checklist items (`categories[].items[]`) have the fields `id`, `title`,
 `done`, `bisWann` (deadline), `wann` (appointment), `wannRepeatWeekly`,

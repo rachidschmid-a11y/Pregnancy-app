@@ -4,6 +4,48 @@ Alle nennenswerten Änderungen an „Unser Nest“, die neuesten zuerst.
 
 ---
 
+## 18.10.2026 – Version 2.3: Rückfrage vor dem Löschen und Verlauf
+
+### Neu
+
+- **Rückfrage vor jedem Löschen:** Bevor etwas gelöscht wird, fragt die App
+  nach („Punkt löschen?“ mit Namen, Knöpfe „Abbrechen“ und „Löschen“).
+  „Abbrechen“ ist vorausgewählt – Enter löscht also nicht versehentlich.
+  Gilt für Punkte, Kategorien und Links der Checkliste, Kleidungsstücke,
+  Kleidungs-Kategorien und -Unterkategorien, Namen, Kontakte, einzelne Wehen
+  und „Alle Wehen löschen“. „Rückgängig“ im Hinweis direkt danach gibt es
+  weiterhin.
+- **Verlauf** (Konto-Menü → „Verlauf“, Adresse `#verlauf`): Jede Änderung
+  mit Person, Uhrzeit, Bereich und was genau geändert wurde, z. B. „Frist
+  für „Elterngeld beantragen“: 12.11.2026 → 15.11.2026“. Filter nach Person
+  und Bereich. Jeder Eintrag hat „Rückgängig“ bzw. „Wiederherstellen“
+  (gelöschte Kleidungsstücke samt Foto); auch das Zurücknehmen steht danach
+  im Verlauf.
+  - Wurde dasselbe inzwischen noch einmal geändert, fragt die App nach,
+    statt die neuere Änderung stillschweigend zu überschreiben.
+  - Zurücknehmen, das etwas löscht (z. B. „Name hinzugefügt“), fragt vorher.
+  - Tippen in dasselbe Feld wird zu einem Eintrag zusammengefasst; mehrere
+    neue Punkte auf einmal (Vorlagen-Paket) ebenfalls.
+  - Einträge älter als 90 Tage löscht die App automatisch.
+  - Bewertungen von Namen werden bewusst nicht erfasst (sie sind verdeckt,
+    bis man selbst bewertet hat). Starten/Stoppen von Wehen ebenfalls nicht,
+    Löschen schon.
+- **Sicherung** enthält jetzt auch `verlauf.csv` und den Verlauf im JSON
+  (ohne Fotos). Beim Wiederherstellen bleibt der Verlauf erhalten; das
+  Wiederherstellen selbst ist ein Eintrag.
+
+### Technisches
+
+- Neue Sammlung `nest/shared/history/{id}` (ein Dokument pro Änderung);
+  die bestehenden Zugriffsregeln decken sie bereits ab.
+- Checkliste und Kleidungs-Kategorien: Vor jedem Speichern vergleicht die
+  App den eigenen Stand mit dem zuletzt erfassten (`diffTree`). Änderungen
+  der anderen Person werden dabei übernommen, nicht als eigene erfasst.
+  Zurücknehmen über `undoTreeChange` – mit Tests (`npm test`, jetzt 32).
+- Service-Worker-Cache `unser-nest-v2.3`.
+
+---
+
 ## 04.10.2026 – Version 2.2: Verschieben per Griff ⠿
 
 ### Neu

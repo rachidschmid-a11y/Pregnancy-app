@@ -51,7 +51,8 @@ Entwicklung und Deployment.
 | ⏱️ **Geburt** | **Wehen-Timer** live auf beiden Geräten mit Auswertung der letzten Stunde; wichtige Telefonnummern mit Anruf-Knopf; Stand der Kliniktasche aus der Checkliste |
 | 🔄 **Zusammenarbeit** | Echtzeit-Sync; gleichzeitige Änderungen werden **zusammengeführt** statt überschrieben; **eigene Anzeigenamen** (z. B. Spitznamen) unabhängig vom Google-Profil |
 | 📴 **Offline & App** | Offline-Speicher für Daten und App; installierbar als App (Android, iPhone, Desktop) |
-| 💾 **Sicherung** | Export als ZIP (CSV-Dateien, Fotos, vollständiges JSON) und Wiederherstellen daraus |
+| 🕰️ **Verlauf** | Wer hat wann was geändert (die letzten 90 Tage), Filter nach Person und Bereich, **Rückgängig** bzw. **Wiederherstellen** je Eintrag; **Rückfrage vor jedem Löschen** |
+| 💾 **Sicherung** | Export als ZIP (CSV-Dateien inkl. Verlauf, Fotos, vollständiges JSON) und Wiederherstellen daraus |
 | 🔒 **Zugriffsschutz** | Anmeldung nur mit Google und nur für freigegebene, verifizierte Adressen – serverseitig geprüft |
 
 ---
@@ -394,9 +395,10 @@ npm test       # = node --test tests/*.test.js
 
 Die Tests lesen den Abschnitt „REINE HILFSFUNKTIONEN“ direkt aus
 `public/index.html` und prüfen ihn mit Node – ohne Browser, ohne Firebase und
-ohne zusätzliche Pakete; es werden also keine Zugangsdaten benötigt. Die 24
+ohne zusätzliche Pakete; es werden also keine Zugangsdaten benötigt. Die 32
 Tests decken das Zusammenführen gleichzeitiger Änderungen, die Verträglichkeit
-mit Version 1, das Verschieben von Punkten, Preiserkennung, Schwangerschaftswoche, Jahreszeit je Größe,
+mit Version 1, das Verschieben von Punkten, den Verlauf (Änderungen erkennen
+und zurücknehmen), Preiserkennung, Schwangerschaftswoche, Jahreszeit je Größe,
 Zielwert-Vorschläge, Wehen-Auswertung, Kalender-Export, CSV-Schutz sowie
 ZIP-Erzeugung und -Auslesen ab. Die Oberfläche selbst wird mit dem Emulator
 (Schritt 3.4) ausprobiert.
@@ -416,6 +418,7 @@ ZIP-Erzeugung und -Auslesen ab. Die Oberfläche selbst wird mit dem Emulator
 | `nest/shared/contractions/{id}` | Wehen | `start`, `end` (Millisekunden), `by` |
 | `nest/shared/meta/members` | Angemeldete Personen (für „Zuständig“ usw.) | je Nutzer-ID: `email`, `name` (aus Google), `displayName` (selbst gewählt, optional) |
 | `nest/shared/meta/checklistExtras` | Kopie der Angaben, die nur Version 2 kennt | `items{}` mit `wer`, `doneBy`, `doneAt`; `budget`, `birthDate` |
+| `nest/shared/history/{id}` | Verlauf (eine Änderung pro Dokument, 90 Tage) | `at`, `by`, `area`, `op`, `label`, `old`/`new` bzw. `data`, `undone` |
 
 Die Punkte der Checkliste (`categories[].items[]`) haben die Felder `id`,
 `title`, `done`, `bisWann` (Frist), `wann` (Termin), `wannRepeatWeekly`,
