@@ -9,6 +9,11 @@ syncs in real time between your devices, works offline and can be installed
 like an app on your phone. [Cloud Firestore](https://firebase.google.com/docs/firestore)
 is used as the database; sign-in works with Google accounts.
 
+<p align="center">
+  <img src="docs/screenshots/vorschau.png" alt="Unser Nest on desktop and phone: checklist, baby clothes, names and contraction timer" width="100%">
+  <br><sub>With made-up sample data – more pictures under <a href="#screenshots">Screenshots</a></sub>
+</p>
+
 This documentation covers the complete setup process from scratch to a
 running, self-hosted instance — including the access rules, local
 development, and deployment.
@@ -23,19 +28,20 @@ development, and deployment.
 ## Table of contents
 
 1. [Features](#features)
-2. [Tech stack](#tech-stack)
-3. [Project structure](#project-structure)
-4. [Prerequisites](#prerequisites)
-5. [Setup step 1: Set up a Firebase project](#setup-step-1-set-up-a-firebase-project)
-6. [Setup step 2: Create the access rules](#setup-step-2-create-the-access-rules)
-7. [Setup step 3: Local development environment](#setup-step-3-local-development-environment)
-8. [Setup step 4: Deploy to Firebase Hosting](#setup-step-4-deploy-to-firebase-hosting)
-9. [Configuration](#configuration)
-10. [Tests](#tests)
-11. [Database schema reference](#database-schema-reference)
-12. [Troubleshooting](#troubleshooting)
-13. [Security notes](#security-notes)
-14. [License](#license)
+2. [Screenshots](#screenshots)
+3. [Tech stack](#tech-stack)
+4. [Project structure](#project-structure)
+5. [Prerequisites](#prerequisites)
+6. [Setup step 1: Set up a Firebase project](#setup-step-1-set-up-a-firebase-project)
+7. [Setup step 2: Create the access rules](#setup-step-2-create-the-access-rules)
+8. [Setup step 3: Local development environment](#setup-step-3-local-development-environment)
+9. [Setup step 4: Deploy to Firebase Hosting](#setup-step-4-deploy-to-firebase-hosting)
+10. [Configuration](#configuration)
+11. [Tests](#tests)
+12. [Database schema reference](#database-schema-reference)
+13. [Troubleshooting](#troubleshooting)
+14. [Security notes](#security-notes)
+15. [License](#license)
 
 ---
 
@@ -54,6 +60,60 @@ development, and deployment.
 | 🕰️ **History** | Who changed what and when (last 90 days), filter by person and area, **undo** / **restore** per entry; **confirmation before every delete** |
 | 💾 **Backup** | Export as ZIP (CSV files incl. history, photos, full JSON) and restore from it |
 | 🔒 **Access control** | Sign-in with Google only, and only for approved, verified addresses — enforced on the server |
+
+---
+
+## Screenshots
+
+> Everything shown is **made-up sample data**: two demo people "Alex" and
+> "Sam", an invented due date, "Klinikum Musterstadt" (≈ "Sample Town
+> Hospital") and phone numbers that don't work. The pictures come from the
+> local test environment (Firebase Emulator), not from a real installation.
+> The user interface is in German.
+
+### Checklist
+
+![Checklist on a computer: week of pregnancy, progress, open questions, dates for the next 14 days and budget](docs/screenshots/desktop-checkliste.png)
+
+At the top: the week of pregnancy with a size comparison and the checklist
+progress; below: open questions, appointments and deadlines for the next
+14 days, and the budget.
+
+![Expanded item with deadline, appointment, price, assignee, notes, open questions and links](docs/screenshots/desktop-punkt-details.png)
+
+An expanded item: deadline, appointment (optionally weekly), price,
+assignee, notes, open questions and links. "Done by … on …" appears once it
+is ticked off.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-checkliste.png" alt="Checklist on the phone" width="260"><br><sub><b>On the phone</b> – grip ⠿ and expand arrow next to every item, badges below</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-verschieben.png" alt="Grip menu for moving items" width="260"><br><sub><b>Moving</b> – drag the grip or tap it: to top/bottom, one up/down, to another category</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-loeschen.png" alt="Confirmation before deleting" width="260"><br><sub><b>Confirmation before deleting</b> – “Abbrechen” (cancel) is preselected</sub></td>
+  </tr>
+</table>
+
+### Baby clothes, names and birth
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-kleidung.png" alt="Baby clothes: stock per size" width="260"><br><sub><b>Baby clothes</b> – stock per size with targets and the matching season</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-namen.png" alt="Shared list of names with ratings" width="260"><br><sub><b>Names</b> – each person rates on their own; a match when both like a name</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-geburt.png" alt="Contraction timer with analysis" width="260"><br><sub><b>Birth</b> – contraction timer with an analysis of the last hour, and important numbers</sub></td>
+  </tr>
+</table>
+
+### History and dark design
+
+![History: who changed what and when, with undo and restore](docs/screenshots/desktop-verlauf.png)
+
+The history shows every change with person, time and area – each one can be
+undone, deleted entries can be restored.
+
+<p align="center">
+  <img src="docs/screenshots/handy-dunkel.png" alt="Dark design on the phone" width="260">
+  <br><sub>Dark design – follows the system setting or can be chosen</sub>
+</p>
 
 ---
 
@@ -81,6 +141,7 @@ development, and deployment.
 │   └── icons/                     # App icons
 ├── tests/
 │   └── helpers.test.js            # Tests for the pure helper functions
+├── docs/screenshots/              # Images for this documentation (sample data)
 ├── .devcontainer/
 │   └── devcontainer.json          # Optional dev container configuration (VS Code/Codespaces)
 ├── firebase.json                  # Hosting (incl. headers), Firestore, emulator ports

@@ -10,6 +10,11 @@ funktioniert auch offline und lässt sich wie eine App auf dem Handy
 installieren. Als Datenbank kommt [Cloud Firestore](https://firebase.google.com/docs/firestore)
 zum Einsatz, die Anmeldung läuft über Google-Konten.
 
+<p align="center">
+  <img src="docs/screenshots/vorschau.png" alt="Unser Nest auf Computer und Handy: Checkliste, Baby-Kleidung, Namen und Wehen-Timer" width="100%">
+  <br><sub>Mit erfundenen Beispieldaten – mehr Bilder unter <a href="#so-sieht-die-app-aus">So sieht die App aus</a></sub>
+</p>
+
 Diese Dokumentation beschreibt den kompletten Setup-Prozess von null auf eine
 lauffähige, selbst gehostete Instanz – inklusive Zugriffsregeln, lokaler
 Entwicklung und Deployment.
@@ -23,19 +28,20 @@ Entwicklung und Deployment.
 ## Inhaltsverzeichnis
 
 1. [Funktionsübersicht](#funktionsübersicht)
-2. [Technischer Stack](#technischer-stack)
-3. [Projektstruktur](#projektstruktur)
-4. [Voraussetzungen](#voraussetzungen)
-5. [Setup Schritt 1: Firebase-Projekt einrichten](#setup-schritt-1-firebase-projekt-einrichten)
-6. [Setup Schritt 2: Zugriffsregeln anlegen](#setup-schritt-2-zugriffsregeln-anlegen)
-7. [Setup Schritt 3: Lokale Entwicklungsumgebung](#setup-schritt-3-lokale-entwicklungsumgebung)
-8. [Setup Schritt 4: Deployment auf Firebase Hosting](#setup-schritt-4-deployment-auf-firebase-hosting)
-9. [Konfiguration](#konfiguration)
-10. [Tests](#tests)
-11. [Datenbank-Schema-Referenz](#datenbank-schema-referenz)
-12. [Troubleshooting](#troubleshooting)
-13. [Sicherheitshinweise](#sicherheitshinweise)
-14. [Lizenz](#lizenz)
+2. [So sieht die App aus](#so-sieht-die-app-aus)
+3. [Technischer Stack](#technischer-stack)
+4. [Projektstruktur](#projektstruktur)
+5. [Voraussetzungen](#voraussetzungen)
+6. [Setup Schritt 1: Firebase-Projekt einrichten](#setup-schritt-1-firebase-projekt-einrichten)
+7. [Setup Schritt 2: Zugriffsregeln anlegen](#setup-schritt-2-zugriffsregeln-anlegen)
+8. [Setup Schritt 3: Lokale Entwicklungsumgebung](#setup-schritt-3-lokale-entwicklungsumgebung)
+9. [Setup Schritt 4: Deployment auf Firebase Hosting](#setup-schritt-4-deployment-auf-firebase-hosting)
+10. [Konfiguration](#konfiguration)
+11. [Tests](#tests)
+12. [Datenbank-Schema-Referenz](#datenbank-schema-referenz)
+13. [Troubleshooting](#troubleshooting)
+14. [Sicherheitshinweise](#sicherheitshinweise)
+15. [Lizenz](#lizenz)
 
 ---
 
@@ -54,6 +60,60 @@ Entwicklung und Deployment.
 | 🕰️ **Verlauf** | Wer hat wann was geändert (die letzten 90 Tage), Filter nach Person und Bereich, **Rückgängig** bzw. **Wiederherstellen** je Eintrag; **Rückfrage vor jedem Löschen** |
 | 💾 **Sicherung** | Export als ZIP (CSV-Dateien inkl. Verlauf, Fotos, vollständiges JSON) und Wiederherstellen daraus |
 | 🔒 **Zugriffsschutz** | Anmeldung nur mit Google und nur für freigegebene, verifizierte Adressen – serverseitig geprüft |
+
+---
+
+## So sieht die App aus
+
+> Alle Inhalte auf den Bildern sind **erfundene Beispieldaten**: zwei
+> Demo-Personen „Alex“ und „Sam“, ein ausgedachter Entbindungstermin, das
+> „Klinikum Musterstadt“ und Telefonnummern ohne Funktion. Die Bilder stammen
+> aus der lokalen Testumgebung (Firebase Emulator), nicht aus einer echten
+> Installation.
+
+### Checkliste
+
+![Checkliste am Computer: Schwangerschaftswoche, Fortschritt, offene Fragen, Termine der nächsten 14 Tage und Budget](docs/screenshots/desktop-checkliste.png)
+
+Oben Schwangerschaftswoche mit Größenvergleich und der Fortschritt der
+Checkliste, darunter offene Fragen, Termine und Fristen der nächsten 14 Tage
+und das Budget.
+
+![Aufgeklappter Punkt mit Frist, Termin, Preis, Zuständigkeit, Notizen, offenen Fragen und Links](docs/screenshots/desktop-punkt-details.png)
+
+Ein aufgeklappter Punkt: Frist, Termin (optional wöchentlich), Preis,
+Zuständigkeit, Notizen, offene Fragen und Links. „Erledigt von … am …“
+erscheint nach dem Abhaken.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-checkliste.png" alt="Checkliste auf dem Handy" width="260"><br><sub><b>Auf dem Handy</b> – Griff ⠿ und Aufklapp-Pfeil neben jedem Punkt, Kennzeichen darunter</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-verschieben.png" alt="Menü am Griff zum Verschieben" width="260"><br><sub><b>Verschieben</b> – am Griff ziehen oder antippen: ganz nach oben/unten, eins nach oben/unten, in andere Kategorie</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-loeschen.png" alt="Rückfrage vor dem Löschen" width="260"><br><sub><b>Rückfrage vor dem Löschen</b> – „Abbrechen“ ist vorausgewählt</sub></td>
+  </tr>
+</table>
+
+### Baby-Kleidung, Namen und Geburt
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-kleidung.png" alt="Baby-Kleidung: Bestand je Größe" width="260"><br><sub><b>Baby-Kleidung</b> – Bestand je Größe mit Zielwerten und der passenden Jahreszeit</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-namen.png" alt="Gemeinsame Namensliste mit Bewertungen" width="260"><br><sub><b>Namen</b> – jede Person bewertet für sich; Treffer, wenn beide einen Namen mögen</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/handy-geburt.png" alt="Wehen-Timer mit Auswertung" width="260"><br><sub><b>Geburt</b> – Wehen-Timer mit Auswertung der letzten Stunde und wichtige Nummern</sub></td>
+  </tr>
+</table>
+
+### Verlauf und dunkles Design
+
+![Verlauf: wer hat wann was geändert, mit Rückgängig und Wiederherstellen](docs/screenshots/desktop-verlauf.png)
+
+Der Verlauf zeigt jede Änderung mit Person, Uhrzeit und Bereich – jede lässt
+sich zurücknehmen, gelöschte Einträge lassen sich wiederherstellen.
+
+<p align="center">
+  <img src="docs/screenshots/handy-dunkel.png" alt="Dunkles Design auf dem Handy" width="260">
+  <br><sub>Dunkles Design – automatisch nach Systemeinstellung oder fest wählbar</sub>
+</p>
 
 ---
 
@@ -81,6 +141,7 @@ Entwicklung und Deployment.
 │   └── icons/                     # App-Symbole
 ├── tests/
 │   └── helpers.test.js            # Tests der reinen Hilfsfunktionen
+├── docs/screenshots/              # Bilder für diese Dokumentation (Beispieldaten)
 ├── .devcontainer/
 │   └── devcontainer.json          # Optionale Dev-Container-Konfiguration (VS Code/Codespaces)
 ├── firebase.json                  # Hosting (inkl. Header), Firestore, Emulator-Ports
