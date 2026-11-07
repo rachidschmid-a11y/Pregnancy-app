@@ -501,6 +501,62 @@
   @keyframes reorderFlash{0%,30%{background:var(--accent-soft);}100%{background:transparent;}}
   @media (prefers-reduced-motion: reduce){ .reorder-flash{animation:none;} }
 
+  /* ---------- Notizen (2.4) ---------- */
+  #notesView{display:flex;flex-direction:column;gap:16px;}
+  #notesView[hidden]{display:none;}
+  .notes-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .notes-head h2{flex:1 1 auto;}
+  .notes-search{position:relative;}
+  .notes-search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-3);}
+  .notes-search input{width:100%;padding:11px 14px 11px 40px;border-radius:100px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:15px;font-family:inherit;}
+  .notes-list{overflow:hidden;}
+  .note-row{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--line);padding:14px 20px;cursor:pointer;font-family:inherit;color:inherit;}
+  .note-row:first-child{border-top:none;}
+  .note-row:hover{background:var(--surface-2);}
+  .note-row-top{display:flex;align-items:center;gap:8px;min-width:0;}
+  .note-row-title{flex:1;min-width:0;font-weight:700;font-size:15px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .note-row-title.empty{color:var(--ink-3);font-weight:600;}
+  .note-row-pin{display:flex;color:var(--gold);}
+  .note-row-pin svg{width:16px;height:16px;}
+  .note-row-text{font-size:13.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .note-row-meta{display:flex;align-items:center;gap:7px;margin-top:4px;font-size:12px;color:var(--ink-3);}
+  .note-tag{font-size:11.5px;padding:2px 8px;border-radius:100px;background:var(--surface-2);color:var(--ink-2);}
+  .note-detail-bar{display:flex;align-items:center;gap:8px;}
+  .note-detail-bar .btn svg{width:15px;height:15px;}
+  .note-pin svg{width:20px;height:20px;}
+  .note-pin.on{color:var(--gold);background:var(--gold-soft);}
+  .note-card{gap:10px;}
+  .note-card:focus-within{border-color:var(--line-strong);}
+  .note-title{border:none;background:none;font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--ink);padding:2px 0;width:100%;}
+  .note-title:focus,.note-text:focus{outline:none;}
+  .note-meta{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3);}
+  .note-tag-label{display:flex;align-items:center;gap:6px;}
+  .note-tag-select{border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink-2);border-radius:100px;padding:4px 10px;font-size:12.5px;font-family:inherit;}
+  .note-text{border:none;background:none;font-family:var(--font-body);font-size:15.5px;line-height:1.65;color:var(--ink);resize:none;min-height:220px;width:100%;padding:4px 0;overflow:hidden;}
+  .note-foot{display:flex;justify-content:flex-end;border-top:1px solid var(--line);padding-top:10px;}
+  @media (max-width:560px){ .note-row{padding:13px 16px;} .note-title{font-size:20px;} }
+  /* Fünf Reiter auf mittleren Breiten (Tablet): Logo und Status behalten ihre
+     Breite, die Reiter teilen sich den Rest; schmaler werden zuerst die
+     Symbole der Reiter und das Wort „gespeichert“ (der Punkt bleibt) ausgeblendet. */
+  /* (Selektoren bewusst etwas genauer: weiter unten stehen die allgemeinen
+     Regeln für .topbar und .tab, die sonst gewinnen würden.) */
+  @media (min-width:681px){
+    body .topbar{grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr);}
+    body .topbar-status{flex-wrap:nowrap;}
+  }
+  @media (min-width:681px) and (max-width:1100px){
+    body .topbar{grid-template-columns:auto minmax(0,1fr) auto;gap:10px 14px;}
+    body .topbar .tabbar{justify-self:center;}
+    #mainTabbar .tab{padding:8px 11px;font-size:13px;gap:5px;}
+  }
+  @media (min-width:681px) and (max-width:960px){
+    #mainTabbar .tab svg{display:none;}
+    #saveText{display:none;}
+  }
+  @media (min-width:681px) and (max-width:800px){
+    #mainTabbar .tab{padding:8px 9px;}
+  }
+
   /* ---------- Verlauf (2.3) ---------- */
   #historyView{display:flex;flex-direction:column;gap:16px;}
   #historyView[hidden]{display:none;}
@@ -831,6 +887,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h5M9.5 16.5h5"/></svg>
         Checkliste
       </button>
+      <button class="tab" data-view="notes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10A1.5 1.5 0 0 1 18.5 5v14a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5Z"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>
+        Notizen
+      </button>
       <button class="tab" data-view="baby">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l.6 2.4L18 7v3l-2-.5V19a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V9.5L6 10V7l2.4-1.6Z"/><circle cx="12" cy="13" r="1" fill="currentColor" stroke="none"/></svg>
         Kleidung
@@ -928,9 +988,11 @@
 
   <div id="birthView" hidden></div>
 
+  <div id="notesView" hidden></div>
+
   <div id="historyView" hidden></div>
 
-  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.3</span></footer>
+  <footer class="note">Nur ihr beide (angemeldet mit Google) könnt diese Daten sehen und bearbeiten. Änderungen werden in Echtzeit für euch beide gespeichert. <span class="ver">· Version 2.4</span></footer>
 </div>
 
 <div id="toasts" aria-live="polite"></div>
@@ -970,7 +1032,7 @@
   var EMULATOR_HOST = "127.0.0.1";
 
   var DOC_PATH = { collection: "nest", doc: "shared" };
-  var APP_VERSION = "2.3";
+  var APP_VERSION = "2.4";
 
   /* ========================================================= */
 
@@ -1027,7 +1089,10 @@
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg>',
     // neu in Version 2.3: Verlauf
     history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5"/><path d="M12 7.5V12l3 2"/></svg>',
-    undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>'
+    undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>',
+    // neu in Version 2.4: Notizen
+    notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10A1.5 1.5 0 0 1 18.5 5v14a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5Z"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5h5l-.8 5.2 3.3 3.3v1.5H7v-1.5l3.3-3.3Z"/><path d="M12 13.5v7"/></svg>'
   };
   function icon(name){ return ICONS[name] || ICONS.spark; }
   // Jede Kategorie bekommt je nach Symbol einen eigenen, ruhigen Farbton.
@@ -1738,6 +1803,47 @@
     return {ok: false, reason: "unknown"};
   }
 
+  /* ---- Notizen ---- */
+  // Welche Zeilen kamen dazu, welche fielen weg? (für den Verlauf bei längeren Texten)
+  function lineChanges(oldText, newText){
+    var a = String(oldText || "").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
+    var b = String(newText || "").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
+    var left = a.slice(), added = [];
+    b.forEach(function(line){
+      var i = left.indexOf(line);
+      if (i === -1) added.push(line); else left.splice(i, 1);
+    });
+    return {added: added, removed: left};
+  }
+  // Angeheftete zuerst, dann die zuletzt geänderten
+  function sortNotes(list){
+    return list.slice().sort(function(a, b){
+      return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+    });
+  }
+  // Suche (alle Wörter müssen vorkommen) und Filter nach Bereich
+  function noteMatches(n, query, tag){
+    if (tag && tag !== "all" && n.tag !== tag) return false;
+    var hay = ((n.title || "") + " " + (n.text || "")).toLowerCase();
+    return String(query || "").toLowerCase().split(/\s+/).filter(Boolean).every(function(w){ return hay.indexOf(w) !== -1; });
+  }
+  // „gerade eben“, „vor 12 Min.“, „heute 14:32“, „gestern 09:10“, „Mo., 02.11.“, „02.11.2025“
+  function relTime(ms, now){
+    now = now || new Date();
+    var d = new Date(ms), p2 = function(x){ return (x < 10 ? "0" : "") + x; };
+    var sec = (now.getTime() - d.getTime()) / 1000;
+    if (sec < 60) return "gerade eben";
+    if (sec < 3600) return "vor " + Math.floor(sec / 60) + " Min.";
+    var day = function(x){ return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); };
+    var days = Math.round((day(now) - day(d)) / 864e5);
+    var hm = p2(d.getHours()) + ":" + p2(d.getMinutes());
+    if (days === 0) return "heute " + hm;
+    if (days === 1) return "gestern " + hm;
+    var dm = p2(d.getDate()) + "." + p2(d.getMonth() + 1) + ".";
+    if (days < 7) return ["So.", "Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."][d.getDay()] + ", " + dm;
+    return dm + (d.getFullYear() !== now.getFullYear() ? d.getFullYear() : "");
+  }
+
   /* ==== ENDE REINE HILFSFUNKTIONEN ==== */
   function newItem(title){ return {id:uid("item"), title:title, done:false, bisWann:"", wann:"", wannRepeatWeekly:false, preis:"", notizen:"", zuKlaeren:"", links:[], wer:"", doneBy:"", doneAt:""}; }
 
@@ -2120,7 +2226,7 @@
   var members = {};         // uid → {email, name}
 
   // Ansicht
-  var VIEW_HASH = {checklist:"checkliste", baby:"kleidung", names:"namen", birth:"geburt", history:"verlauf"};
+  var VIEW_HASH = {checklist:"checkliste", baby:"kleidung", names:"namen", birth:"geburt", notes:"notizen", history:"verlauf"};
   var mainView = "checklist";
   var viewDirty = {};       // Bereiche, die beim nächsten Anzeigen neu gezeichnet werden müssen
 
@@ -5138,6 +5244,284 @@
   }
 
   /* =========================================================
+     NOTIZEN – euer gemeinsames Notizbuch (fünfter Bereich)
+     nest/shared/notes/{id} = {title, text, tag, pinned, createdBy, createdAt,
+       updatedBy, updatedAt}   (Zeiten in Millisekunden)
+     Jede Notiz ist ein eigenes Dokument: Zwei Personen können gleichzeitig
+     verschiedene Notizen bearbeiten, ohne sich gegenseitig zu überschreiben.
+     Eine neue Notiz entsteht erst, wenn etwas hineingeschrieben wird.
+     ========================================================= */
+  var NOTE_TAGS = {allgemein: "Allgemein", checklist: "Checkliste", clothing: "Kleidung", names: "Namen", birth: "Geburt"};
+  var notesRef = null;
+  var notes = [];
+  var notesLoaded = false;
+  var notesFilter = "all", notesSearch = "";
+  var noteOpenId = null;    // geöffnete Notiz (oder Entwurf)
+  var noteDraft = null;     // neue, noch leere Notiz – wird erst beim ersten Zeichen gespeichert
+  var noteBase = {};        // id → zuletzt gespeicherter Stand (für den Verlauf)
+  var noteSaveTimers = {};
+  var notesSearchTimer = null;
+
+  function readNote(d){
+    var x = d.data() || {};
+    return {id: d.id, title: str(x.title), text: str(x.text), tag: NOTE_TAGS[x.tag] ? x.tag : "allgemein", pinned: !!x.pinned,
+      createdBy: str(x.createdBy), createdAt: typeof x.createdAt === "number" ? x.createdAt : 0,
+      updatedBy: str(x.updatedBy), updatedAt: typeof x.updatedAt === "number" ? x.updatedAt : 0};
+  }
+  function noteFields(n){ return {title: n.title, text: n.text, tag: n.tag, pinned: n.pinned}; }
+  function noteDoc(n){
+    return {title: n.title, text: n.text, tag: n.tag, pinned: n.pinned, createdBy: n.createdBy, createdAt: n.createdAt,
+      updatedBy: n.updatedBy, updatedAt: n.updatedAt};
+  }
+  function noteLabel(n){ return (n.title || "").trim() || shorten(n.text, 40) || "Ohne Titel"; }
+  function findNote(id){ return notes.filter(function(n){ return n.id === id; })[0] || null; }
+  function currentNote(){ return noteDraft && noteDraft.id === noteOpenId ? noteDraft : findNote(noteOpenId); }
+
+  function subscribeNotes(){
+    notesRef = docRef.collection("notes");
+    unsubs.push(notesRef.onSnapshot(function(snap){
+      // Eigene, noch nicht gespeicherte Eingaben behalten
+      var pending = {};
+      notes.forEach(function(n){ if (noteSaveTimers[n.id]) pending[n.id] = n; });
+      notes = snap.docs.map(readNote).map(function(n){ return pending[n.id] || n; });
+      notes.forEach(function(n){ if (!noteSaveTimers[n.id]) noteBase[n.id] = noteFields(n); });
+      notesLoaded = true;
+      if (noteOpenId && !currentNote()){
+        noteOpenId = null; // von der anderen Person gelöscht
+        if (mainView === "notes") toast("Diese Notiz wurde gerade gelöscht.");
+      }
+      renderViewSafe("notes");
+    }, function(err){ console.error(err); notesLoaded = true; renderViewSafe("notes"); }));
+  }
+
+  /* ----- Speichern ----- */
+  function scheduleNoteSave(id, delay){
+    clearTimeout(noteSaveTimers[id]);
+    noteSaveTimers[id] = setTimeout(function(){ saveNote(id); }, delay == null ? 700 : delay);
+  }
+  function saveNote(id){
+    clearTimeout(noteSaveTimers[id]);
+    delete noteSaveTimers[id];
+    var n = findNote(id);
+    if (!n || !notesRef) return Promise.resolve();
+    var base = noteBase[id] || {}, cur = noteFields(n), o = {}, nw = {};
+    Object.keys(cur).forEach(function(k){
+      if (!sameValue(base[k], cur[k])){ o[k] = base[k] == null ? (k === "pinned" ? false : "") : base[k]; nw[k] = cur[k]; }
+    });
+    if (!Object.keys(nw).length) return Promise.resolve();
+    n.updatedBy = myUid();
+    n.updatedAt = Date.now();
+    noteBase[id] = cur;
+    writeHistory({area: "notes", op: "note-edit", id: id, label: noteLabel(n), old: o, new: nw});
+    updateNoteMeta();
+    return trackSave(notesRef.doc(id).update(Object.assign({}, nw, {updatedBy: n.updatedBy, updatedAt: n.updatedAt}))).catch(logErr);
+  }
+  function flushNotes(){ return Promise.all(Object.keys(noteSaveTimers).map(saveNote)); }
+
+  // Eingabe in Titel oder Text der geöffneten Notiz
+  function onNoteInput(){
+    var n = currentNote();
+    if (!n) return;
+    n.title = document.getElementById("noteTitle").value;
+    n.text = document.getElementById("noteText").value;
+    if (n === noteDraft){
+      if (!n.title.trim() && !n.text.trim()) return;
+      // Erstes Zeichen: jetzt wird die Notiz wirklich angelegt
+      noteDraft = null;
+      n.createdBy = n.updatedBy = myUid();
+      n.createdAt = n.updatedAt = Date.now();
+      notes.push(n);
+      noteBase[n.id] = noteFields(n);
+      trackSave(notesRef.doc(n.id).set(noteDoc(n))).catch(logErr);
+      writeHistory({area: "notes", op: "note-add", id: n.id, label: noteLabel(n)});
+      var del = document.getElementById("noteDeleteBtn");
+      if (del) del.hidden = false;
+      updateNoteMeta();
+      return;
+    }
+    scheduleNoteSave(n.id);
+  }
+
+  function newNote(){
+    if (!notesRef) return;
+    noteDraft = {id: notesRef.doc().id, title: "", text: "", tag: notesFilter !== "all" ? notesFilter : "allgemein", pinned: false,
+      createdBy: myUid(), createdAt: 0, updatedBy: "", updatedAt: 0};
+    noteOpenId = noteDraft.id;
+    renderNotes();
+    window.scrollTo({top: 0});
+    var t = document.getElementById("noteTitle");
+    if (t) t.focus();
+  }
+  function closeNote(){
+    if (noteOpenId && noteSaveTimers[noteOpenId]) saveNote(noteOpenId);
+    noteDraft = null;
+    noteOpenId = null;
+    renderNotes();
+    window.scrollTo({top: 0});
+  }
+  function toggleNotePin(){
+    var n = currentNote();
+    if (!n) return;
+    n.pinned = !n.pinned;
+    if (n !== noteDraft) saveNote(n.id);
+    var b = document.getElementById("notePinBtn");
+    if (b){ b.classList.toggle("on", n.pinned); b.setAttribute("aria-pressed", String(n.pinned)); b.title = n.pinned ? "Nicht mehr anheften" : "Anheften"; }
+  }
+  function setNoteTag(tag){
+    var n = currentNote();
+    if (!n || !NOTE_TAGS[tag]) return;
+    n.tag = tag;
+    if (n !== noteDraft) saveNote(n.id);
+  }
+  function askDeleteNote(){
+    var n = currentNote();
+    if (!n || n === noteDraft) return;
+    var id = n.id;
+    confirmDelete({title: "Notiz löschen?", html: "<b>" + esc(q(noteLabel(n))) + "</b> wird für euch beide gelöscht.",
+      onConfirm: function(){ deleteNote(id); }});
+  }
+  function deleteNote(id){
+    var n = findNote(id);
+    if (!n || !notesRef) return;
+    clearTimeout(noteSaveTimers[id]);
+    delete noteSaveTimers[id];
+    notes = notes.filter(function(x){ return x !== n; });
+    trackSave(notesRef.doc(id).delete()).catch(logErr);
+    var entry = writeHistory({area: "notes", op: "note-del", id: id, label: noteLabel(n), data: noteDoc(n)});
+    if (noteOpenId === id) noteOpenId = null;
+    renderNotes();
+    toast("Notiz gelöscht: " + q(noteLabel(n)), entry ? "Rückgängig" : null, function(){ undoHistoryEntry(entry); });
+  }
+
+  /* ----- Anzeige ----- */
+  function renderNotes(){
+    viewDirty.notes = false;
+    var el = document.getElementById("notesView");
+    if (noteOpenId && currentNote()){ renderNoteDetail(el); return; }
+    noteOpenId = null;
+    if (el.getAttribute("data-mode") !== "list"){
+      // Kopf mit Suche nur einmal zeichnen – so stört das Neu-Zeichnen der Liste das Tippen nicht.
+      el.setAttribute("data-mode", "list");
+      el.innerHTML =
+        '<div class="card">' +
+          '<div class="notes-head"><h2>Notizen</h2><button class="btn btn-primary btn-sm" data-action="note-new">' + icon("edit") + ' Neue Notiz</button></div>' +
+          '<p class="muted">Euer gemeinsames Notizbuch – für Fragen an die Hebamme, Packlisten, Ideen und alles, was nirgends sonst hinpasst.</p>' +
+          '<div class="notes-search">' + icon("search") + '<input id="notesSearch" type="search" placeholder="In Notizen suchen …" aria-label="In Notizen suchen" autocomplete="off"></div>' +
+          '<div class="chips" id="notesChips" role="group" aria-label="Bereich"></div>' +
+        '</div>' +
+        '<div class="category notes-list" id="notesList"></div>';
+      document.getElementById("notesSearch").value = notesSearch;
+    }
+    renderNotesList();
+  }
+
+  function renderNotesList(){
+    var chipsEl = document.getElementById("notesChips"), listEl = document.getElementById("notesList");
+    if (!chipsEl || !listEl) return;
+    var count = function(tag){ return notes.filter(function(n){ return tag === "all" || n.tag === tag; }).length; };
+    chipsEl.innerHTML = [{k: "all", l: "Alle"}].concat(Object.keys(NOTE_TAGS).map(function(k){ return {k: k, l: NOTE_TAGS[k]}; })).map(function(c){
+      return '<button class="fchip' + (notesFilter === c.k ? ' active' : '') + '" data-action="notes-filter" data-tag="' + c.k + '" aria-pressed="' + (notesFilter === c.k) + '">' +
+        esc(c.l) + ' <span class="n">' + count(c.k) + '</span></button>';
+    }).join("");
+    var list = sortNotes(notes.filter(function(n){ return noteMatches(n, notesSearch, notesFilter); }));
+    if (!notesLoaded) listEl.innerHTML = '<div class="empty-cat">Notizen werden geladen …</div>';
+    else if (!notes.length) listEl.innerHTML = '<div class="empty-state"><span aria-hidden="true">📝</span><b>Euer Notizbuch ist noch leer</b>' +
+      '<p>Schreibt hier alles auf, was ihr nicht vergessen wollt – z. B. Fragen für den nächsten Arzttermin oder wer was zur Geburt mitbringt.</p>' +
+      '<button class="btn btn-primary" data-action="note-new">' + icon("edit") + ' Erste Notiz schreiben</button></div>';
+    else if (!list.length) listEl.innerHTML = '<div class="empty-cat">Keine passenden Notizen. <button class="link-btn" data-action="notes-clear">Suche zurücksetzen</button></div>';
+    else listEl.innerHTML = list.map(noteRowHtml).join("");
+  }
+
+  function noteRowHtml(n){
+    var preview = n.text.replace(/\s+/g, " ").trim();
+    var title = n.title.trim();
+    return '<button class="note-row" data-action="note-open" data-note="' + escAttr(n.id) + '">' +
+      '<span class="note-row-top"><span class="note-row-title' + (title ? '' : ' empty') + '">' + esc(title || "Ohne Titel") + '</span>' +
+        (n.pinned ? '<span class="note-row-pin" title="Angeheftet">' + icon("pin") + '</span>' : '') + '</span>' +
+      (preview ? '<span class="note-row-text">' + esc(preview) + '</span>' : '') +
+      '<span class="note-row-meta">' + avatarHtml(n.updatedBy || n.createdBy, true) + '<span>' + esc(relTime(n.updatedAt || n.createdAt)) + '</span>' +
+        '<span class="note-tag">' + esc(NOTE_TAGS[n.tag]) + '</span></span>' +
+    '</button>';
+  }
+
+  function noteMetaText(n){
+    if (n === noteDraft) return "Neue Notiz – wird gespeichert, sobald ihr etwas schreibt";
+    var who = personName(n.updatedBy || n.createdBy);
+    return "Zuletzt geändert von " + who + " · " + relTime(n.updatedAt || n.createdAt);
+  }
+  function updateNoteMeta(){
+    var n = currentNote(), el = document.getElementById("noteMeta");
+    if (n && el) el.textContent = noteMetaText(n);
+  }
+
+  function renderNoteDetail(el){
+    var n = currentNote();
+    el.setAttribute("data-mode", "detail");
+    el.innerHTML =
+      '<div class="note-detail-bar">' +
+        '<button class="btn btn-ghost btn-sm" data-action="note-back">' + icon("back") + ' Alle Notizen</button>' +
+        '<span style="flex:1"></span>' +
+        '<button class="icon-btn note-pin' + (n.pinned ? ' on' : '') + '" id="notePinBtn" data-action="note-pin" aria-pressed="' + n.pinned + '" title="' + (n.pinned ? 'Nicht mehr anheften' : 'Anheften') + '" aria-label="Anheften">' + icon("pin") + '</button>' +
+      '</div>' +
+      '<div class="card note-card">' +
+        '<input class="note-title" id="noteTitle" type="text" maxlength="120" placeholder="Titel" aria-label="Titel" autocomplete="off" value="' + escAttr(n.title) + '">' +
+        '<div class="note-meta">' +
+          '<label class="note-tag-label">Bereich <select id="noteTag" class="note-tag-select">' + Object.keys(NOTE_TAGS).map(function(k){
+            return '<option value="' + k + '"' + (n.tag === k ? ' selected' : '') + '>' + esc(NOTE_TAGS[k]) + '</option>';
+          }).join("") + '</select></label>' +
+          '<span id="noteMeta">' + esc(noteMetaText(n)) + '</span>' +
+        '</div>' +
+        '<textarea class="note-text" id="noteText" placeholder="Notiz schreiben …" aria-label="Notiz">' + esc(n.text) + '</textarea>' +
+        '<div class="note-foot"><button class="delete-link" id="noteDeleteBtn" data-action="note-delete"' + (n === noteDraft ? ' hidden' : '') + '>' + icon("trash") + ' Notiz löschen</button></div>' +
+      '</div>';
+    autosizeNoteText();
+  }
+  function autosizeNoteText(){
+    var t = document.getElementById("noteText");
+    if (!t || !t.offsetParent) return;
+    t.style.height = "auto";
+    t.style.height = Math.max(220, t.scrollHeight) + "px";
+  }
+
+  function wireNotesEvents(){
+    var el = document.getElementById("notesView");
+    el.addEventListener("click", function(e){
+      var t = e.target.closest("[data-action]");
+      if (!t) return;
+      var a = t.getAttribute("data-action");
+      if (a === "note-new") newNote();
+      else if (a === "note-open"){ noteOpenId = t.getAttribute("data-note"); noteDraft = null; renderNotes(); window.scrollTo({top: 0}); }
+      else if (a === "note-back") closeNote();
+      else if (a === "note-pin") toggleNotePin();
+      else if (a === "note-delete") askDeleteNote();
+      else if (a === "notes-filter"){ notesFilter = t.getAttribute("data-tag"); renderNotesList(); }
+      else if (a === "notes-clear"){
+        notesSearch = ""; notesFilter = "all";
+        var s = document.getElementById("notesSearch"); if (s) s.value = "";
+        renderNotesList();
+      }
+    });
+    el.addEventListener("input", function(e){
+      if (e.target.id === "noteTitle" || e.target.id === "noteText"){
+        if (e.target.id === "noteText") autosizeNoteText();
+        onNoteInput();
+      } else if (e.target.id === "notesSearch"){
+        notesSearch = e.target.value;
+        clearTimeout(notesSearchTimer);
+        notesSearchTimer = setTimeout(renderNotesList, 120);
+      }
+    });
+    el.addEventListener("change", function(e){ if (e.target.id === "noteTag") setNoteTag(e.target.value); });
+    el.addEventListener("keydown", function(e){
+      // Enter im Titel springt in den Text
+      if (e.key === "Enter" && e.target.id === "noteTitle"){ e.preventDefault(); var t = document.getElementById("noteText"); if (t) t.focus(); }
+    });
+    el.addEventListener("focusout", function(e){
+      if ((e.target.id === "noteTitle" || e.target.id === "noteText") && noteOpenId && noteSaveTimers[noteOpenId]) saveNote(noteOpenId);
+    });
+  }
+
+  /* =========================================================
      VERLAUF – wer hat wann was geändert (mit „Rückgängig“)
      Jede Änderung ist ein eigenes Dokument:
        nest/shared/history/{id} = {at, by, area, op, label, …, undone?}
@@ -5153,7 +5537,7 @@
   var HISTORY_DAYS = 90;
   var HISTORY_PAGE = 150;
   var COALESCE_MS = 3 * 60 * 1000; // weiteres Tippen in dasselbe Feld = derselbe Eintrag
-  var AREA_LABELS = {checklist: "Checkliste", clothing: "Kleidung", names: "Namen", birth: "Geburt", settings: "Einstellungen"};
+  var AREA_LABELS = {checklist: "Checkliste", notes: "Notizen", clothing: "Kleidung", names: "Namen", birth: "Geburt", settings: "Einstellungen"};
   var historyRef = null;
   var historyEntries = [];
   var historyLoaded = false;
@@ -5182,6 +5566,7 @@
     if (e.op === "kfield" || e.op === "field" || e.op === "doc") return [e.tree, e.op, e.id || "", e.field].join("|");
     if (e.op === "target") return "target|" + e.key;
     if (e.op === "cloth-edit" && e.new && Object.keys(e.new).join() === "gewaschen") return "washed|" + e.id;
+    if (e.op === "note-edit" && e.new) return "note|" + e.id + "|" + Object.keys(e.new).sort().join(",");
     return null;
   }
 
@@ -5251,6 +5636,13 @@
   var CLOTHING_FIELDS = Object.keys(CLOTHING_FIELD_LABELS);
   function q(s){ s = shorten(s == null ? "" : s, 80); return "„" + (s || "ohne Titel") + "“"; }
   function shorten(s, n){ s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function textDetail(o, n){
+    var c = lineChanges(o, n), parts = [];
+    if (c.added.length) parts.push("ergänzt: " + q(shorten(c.added.join(" · "), 90)));
+    if (c.removed.length) parts.push("entfernt: " + q(shorten(c.removed.join(" · "), 90)));
+    if (parts.length) return parts.join(" · ");
+    return (o ? "vorher: " + q(shorten(o, 90)) : "vorher leer") + " · " + (n ? "jetzt: " + q(shorten(n, 90)) : "jetzt leer");
+  }
   function dateChange(o, n){ return o && n ? fmtDate(o) + " → " + fmtDate(n) : (n ? fmtDate(n) + " eingetragen" : "entfernt (war " + fmtDate(o) + ")"); }
   function textChange(o, n){ return o && n ? q(shorten(o, 60)) + " → " + q(shorten(n, 60)) : (n ? q(shorten(n, 60)) + " eingetragen" : q(shorten(o, 60)) + " entfernt"); }
   function whoName(v){ return v === "beide" ? "beide" : (v ? personName(v) : "niemand"); }
@@ -5291,8 +5683,7 @@
           case "wannRepeatWeekly": return {text: L + ": wöchentlich wiederholen " + (e.new ? "an" : "aus")};
           case "preis": return {text: "Preis für " + L + ": " + textChange(e.old, e.new)};
           case "notizen": case "zuKlaeren":
-            return {text: (e.field === "notizen" ? "Notizen zu " : "„Zu klären“ bei ") + L + " geändert",
-              detail: (e.old ? "vorher: " + q(shorten(e.old, 90)) : "vorher leer") + " · " + (e.new ? "jetzt: " + q(shorten(e.new, 90)) : "jetzt leer")};
+            return {text: (e.field === "notizen" ? "Notizen zu " : "„Zu klären“ bei ") + L + " geändert", detail: textDetail(e.old, e.new)};
           case "wer": return {text: "Zuständig für " + L + ": " + whoName(e.old) + " → " + whoName(e.new)};
           case "links": return {text: "Links bei " + L + " geändert (" + (e.old || []).length + " → " + (e.new || []).length + ")"};
         }
@@ -5321,6 +5712,14 @@
       case "contact-del": return {text: "Kontakt " + L + " gelöscht"};
       case "contr-del": return {text: "Wehe von " + e.label + " gelöscht"};
       case "contr-clear": return {text: "Wehen-Timer geleert (" + plural(e.count, "Eintrag", "Einträge") + ")"};
+      case "note-add": return {text: "Notiz " + L + " angelegt"};
+      case "note-del": return {text: "Notiz " + L + " gelöscht"};
+      case "note-edit":
+        var nk = Object.keys(e.new || {}).sort().join(",");
+        if (nk === "pinned") return {text: "Notiz " + L + (e.new.pinned ? " angeheftet" : " nicht mehr angeheftet")};
+        if (nk === "tag") return {text: "Notiz " + L + ": Bereich " + (NOTE_TAGS[e.old.tag] || "–") + " → " + (NOTE_TAGS[e.new.tag] || "–")};
+        if (nk === "title") return {text: "Notiz umbenannt: " + textChange(e.old.title, e.new.title)};
+        return {text: "Notiz " + L + " geändert", detail: "text" in e.new ? textDetail(e.old.text, e.new.text) : ""};
       case "displayname": return {text: "Anzeigename für " + e.label + ": " + q(e.old || "aus Google") + " → " + q(e.new || "aus Google")};
       case "restore": return {text: "Sicherung vom " + e.label + " wiederhergestellt"};
       case "undo": return {text: "Rückgängig gemacht: " + (e.ofText || "eine Änderung")};
@@ -5331,9 +5730,10 @@
   /* ----- Rückgängig ----- */
   var UNDOABLE = {doc: 1, field: 1, add: 1, del: 1, move: 1, kfield: 1, kadd: 1, kadds: 1, kdel: 1, kcat: 1, kmove: 1,
     "cloth-add": 1, "cloth-del": 1, "cloth-edit": 1, target: 1, targets: 1, "name-add": 1, "name-del": 1,
-    "contact-add": 1, "contact-edit": 1, "contact-del": 1, "contr-del": 1, "contr-clear": 1, displayname: 1};
+    "contact-add": 1, "contact-edit": 1, "contact-del": 1, "contr-del": 1, "contr-clear": 1, displayname: 1,
+    "note-add": 1, "note-del": 1, "note-edit": 1};
   // Diese Einträge legen etwas an – Zurücknehmen heißt also löschen (mit Rückfrage).
-  var REMOVING_UNDO = {add: 1, kadd: 1, kadds: 1, "cloth-add": 1, "name-add": 1, "contact-add": 1};
+  var REMOVING_UNDO = {add: 1, kadd: 1, kadds: 1, "cloth-add": 1, "name-add": 1, "contact-add": 1, "note-add": 1};
   function isRestoreEntry(e){ return /del|clear/.test(e.op); }
 
   function undoHistoryEntry(e, opts){
@@ -5473,6 +5873,26 @@
         var b = firebase.firestore().batch(), ref = contractionsRef;
         (e.items || []).forEach(function(c){ b.set(ref.doc(c.id), {start: c.start, end: c.end == null ? null : c.end, by: c.by || ""}); });
         trackSave(b.commit()).catch(logErr);
+        return ok;
+      case "note-add":
+        if (!notesRef) return busy;
+        if (!findNote(e.id)) return gone;
+        trackSave(notesRef.doc(e.id).delete()).catch(logErr);
+        return ok;
+      case "note-del":
+        if (!notesRef) return busy;
+        if (findNote(e.id)) return exists;
+        trackSave(notesRef.doc(e.id).set(Object.assign({}, e.data, {updatedBy: myUid(), updatedAt: Date.now()}))).catch(logErr);
+        return ok;
+      case "note-edit":
+        var nt = findNote(e.id);
+        if (!nt || !notesRef) return gone;
+        if (noteSaveTimers[e.id]) saveNote(e.id); // eigene Eingabe zuerst speichern
+        if (!force && Object.keys(e.new || {}).some(function(k){ return !sameValue(nt[k], e.new[k]); })) return changed;
+        Object.assign(nt, e.old, {updatedBy: myUid(), updatedAt: Date.now()});
+        noteBase[e.id] = noteFields(nt);
+        trackSave(notesRef.doc(e.id).update(Object.assign({}, e.old, {updatedBy: nt.updatedBy, updatedAt: nt.updatedAt}))).catch(logErr);
+        renderViewSafe("notes");
         return ok;
       case "displayname":
         if (!docRef) return busy;
@@ -5634,12 +6054,13 @@
      ANSICHTEN, NAVIGATION, DIALOGE
      ========================================================= */
 
-  var VIEW_ELEMENTS = {checklist:"checklistView", baby:"babyView", names:"namesView", birth:"birthView", history:"historyView"};
+  var VIEW_ELEMENTS = {checklist:"checklistView", baby:"babyView", names:"namesView", birth:"birthView", notes:"notesView", history:"historyView"};
   var VIEW_RENDER = {
     checklist: function(){ render(); },
     baby: function(){ renderBaby(); },
     names: function(){ renderNames(); },
     birth: function(){ renderBirth(); },
+    notes: function(){ renderNotes(); },
     history: function(){ renderHistory(); }
   };
 
@@ -5778,6 +6199,7 @@
     if (publishTimer !== null || (fast && publishInFlight)) jobs.push(doPublish(fast));
     if (clothingTargetsTimer !== null) jobs.push(flushClothingTargets());
     if (clothingCategoriesTimer !== null) jobs.push(flushClothingCategories(fast));
+    if (Object.keys(noteSaveTimers).length) jobs.push(flushNotes());
     return Promise.all(jobs);
   }
   document.addEventListener("visibilitychange", function(){
@@ -5862,11 +6284,18 @@
       clothing: {sizes: CLOTHING_SIZES, categories: clothingCategories, targets: clothingTargets, items: itemsJson},
       names: babyNames.map(function(n){ return {id: n.id, name: n.name, gender: n.gender, note: n.note, votes: n.votes, createdBy: n.createdBy}; }),
       contacts: contacts.map(function(c){ return {id: c.id, label: c.label, name: c.name, phone: c.phone, note: c.note, order: c.order}; }),
+      notes: notes.map(function(n){ return Object.assign({id: n.id}, noteDoc(n)); }),
       contractions: contractions.map(function(c){ return {id: c.id, start: c.start, end: c.end, by: c.by}; }),
       members: members,
       // Verlauf der letzten Tage (Fotos gelöschter Kleidungsstücke nicht noch einmal)
       history: JSON.parse(JSON.stringify(history).replace(/"photo":"[^"]*"/g, '"photo":""'))
     };
+    var noteRows = [["Titel","Text","Bereich","Angeheftet","Angelegt von","Zuletzt geändert von","Zuletzt geändert"]];
+    sortNotes(notes).forEach(function(n){
+      var t = n.updatedAt || n.createdAt;
+      noteRows.push([n.title, n.text, NOTE_TAGS[n.tag], yn(n.pinned), personName(n.createdBy), personName(n.updatedBy || n.createdBy),
+        t ? fmtDate(isoDate(new Date(t))) + " " + clockTime(t) : ""]);
+    });
     var histRows = [["Datum","Uhrzeit","Person","Bereich","Änderung","Details","Rückgängig gemacht"]];
     history.forEach(function(e){
       if (typeof e.at !== "number") return;
@@ -5880,6 +6309,7 @@
       "checkliste.csv         Alle Punkte der Checkliste (öffnen mit Excel/LibreOffice).",
       "kleidung.csv           Alle erfassten Kleidungsstücke; Spalte \"Foto\" verweist auf die Bilddatei.",
       "namen.csv              Eure Namensliste mit Bewertungen.",
+      "notizen.csv            Euer Notizbuch.",
       "verlauf.csv            Wer hat wann was geändert (die letzten " + HISTORY_DAYS + " Tage).",
       "fotos/                 Die Fotos der Kleidungsstücke als JPG.",
       "unser-nest-daten.json  Vollständiger Datenstand (inkl. Kategorien, Zielwerten, Kontakten).",
@@ -5894,6 +6324,7 @@
       {name: "checkliste.csv", data: enc.encode(csvText(checkRows))},
       {name: "kleidung.csv", data: enc.encode(csvText(clothRows))},
       {name: "namen.csv", data: enc.encode(csvText(nameRows))},
+      {name: "notizen.csv", data: enc.encode(csvText(noteRows))},
       {name: "verlauf.csv", data: enc.encode(csvText(histRows))},
       {name: "unser-nest-daten.json", data: enc.encode(JSON.stringify(data, null, 2))}
     );
@@ -5955,8 +6386,9 @@
             '<li>Baby-Kleidung: ' + plural(items.length, 'Stück', 'Stücke') + (photosWanted ? ' (' + photosFound + ' von ' + photosWanted + ' Fotos)' : '') + '</li>' +
             (names.length ? '<li>Namen: ' + names.length + '</li>' : '') +
             (cts.length ? '<li>Kontakte: ' + cts.length + '</li>' : '') +
+            (Array.isArray(d.notes) && d.notes.length ? '<li>Notizen: ' + d.notes.length + '</li>' : '') +
           '</ul>' +
-          '<p><b>Checkliste, Kleidungs-Kategorien und Zielwerte</b> werden durch den Stand der Sicherung <b>ersetzt</b>. Kleidungsstücke, Namen und Kontakte aus der Sicherung werden wiederhergestellt; was ihr seitdem neu angelegt habt, bleibt erhalten.</p>' +
+          '<p><b>Checkliste, Kleidungs-Kategorien und Zielwerte</b> werden durch den Stand der Sicherung <b>ersetzt</b>. Kleidungsstücke, Namen, Kontakte und Notizen aus der Sicherung werden wiederhergestellt; was ihr seitdem neu angelegt habt, bleibt erhalten.</p>' +
           '<p>Zur Sicherheit wird vorher automatisch eine Sicherung des jetzigen Stands heruntergeladen.</p>' +
           (photosWanted > photosFound ? '<p>Hinweis: Nicht alle Fotos sind in der Datei enthalten' + (res.photos && Object.keys(res.photos).length ? '' : ' (nur die JSON-Datei gewählt?)') + ' – betroffene Stücke werden ohne Foto wiederhergestellt.</p>' : ''),
         buttons: [
@@ -6034,6 +6466,12 @@
       add(namesRef.doc(String(n.id)), {name: str(n.name), gender: GENDER_LABELS[n.gender] ? n.gender : "n", note: str(n.note),
         votes: (n.votes && typeof n.votes === "object") ? n.votes : {}, createdBy: str(n.createdBy),
         createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+    });
+    (Array.isArray(d.notes) ? d.notes : []).forEach(function(n){
+      if (!n || !n.id) return;
+      add(notesRef.doc(String(n.id)), {title: str(n.title), text: str(n.text), tag: NOTE_TAGS[n.tag] ? n.tag : "allgemein", pinned: !!n.pinned,
+        createdBy: str(n.createdBy), createdAt: typeof n.createdAt === "number" ? n.createdAt : Date.now(),
+        updatedBy: str(n.updatedBy), updatedAt: typeof n.updatedAt === "number" ? n.updatedAt : Date.now()});
     });
     (Array.isArray(d.contacts) ? d.contacts : []).forEach(function(c){
       if (!c || !c.id) return;
@@ -6276,6 +6714,7 @@
     wireNamesEvents();
     wireBirthEvents();
     wireHistoryEvents();
+    wireNotesEvents();
     wireAccountMenu();
     var cv = document.getElementById("checklistView");
     cv.addEventListener("click", handleClick);
@@ -6400,6 +6839,7 @@
     subscribeClothing();
     subscribeNames();
     subscribeBirth();
+    subscribeNotes();
     setMainView(viewFromHash(), true);
     showInstallBanner();
     setTimeout(pruneHistory, 8000); // alte Verlaufseinträge aufräumen (nicht beim Start bremsen)
@@ -6448,6 +6888,11 @@
     document.getElementById("namesView").innerHTML = "";
     document.getElementById("birthView").innerHTML = "";
     contractionsRef = null; contractions = []; contactsRef = null; contacts = []; contactEditingId = null;
+    Object.keys(noteSaveTimers).forEach(function(k){ clearTimeout(noteSaveTimers[k]); });
+    notesRef = null; notes = []; notesLoaded = false; notesFilter = "all"; notesSearch = ""; noteOpenId = null; noteDraft = null;
+    noteBase = {}; noteSaveTimers = {};
+    document.getElementById("notesView").innerHTML = "";
+    document.getElementById("notesView").removeAttribute("data-mode");
     unsubscribeHistory();
     historyRef = null; historyEntries = []; historyLoaded = false; historyFailed = false; historyLimit = HISTORY_PAGE;
     historyWho = "all"; historyArea = "all";

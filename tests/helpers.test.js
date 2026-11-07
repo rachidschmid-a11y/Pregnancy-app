@@ -19,7 +19,8 @@ function loadHelpers(){
     "mergeFields","mergeOrder","mergeTree","mergeChecklist","mergeClothingCategories","parsePrice","fmtMoney",
     "pregnancyInfo","babyAge","sizeTimeframe","suggestTargets","contractionStats","fmtDuration","buildIcs","icsFold",
     "csvCell","csvText","slug","crc32","buildZipParts","parseZip","base64ToBytes","bytesToBase64","extrasFromState","restoreV2Fields",
-    "placeEntry","neighborMove","movedIds","diffTree","undoTreeChange","CHECKLIST_SPEC","CLOTHING_CATS_SPEC"];
+    "placeEntry","neighborMove","movedIds","diffTree","undoTreeChange","CHECKLIST_SPEC","CLOTHING_CATS_SPEC",
+    "sortNotes","noteMatches","relTime","lineChanges"];
   const code = html.slice(start, end) + "\n;({" + names.join(",") + "});";
   const ctx = vm.createContext({TextEncoder, TextDecoder, Blob, Response, DecompressionStream, atob, btoa, Uint8Array, DataView, ArrayBuffer, Uint32Array, Promise, Date, Math, JSON});
   return vm.runInContext(code, ctx);
@@ -383,4 +384,40 @@ test("Verlauf: beim Tausch zweier Nachbarn gilt der gezogene Eintrag als verscho
   assert.deepEqual(plain(H.movedIds(["a","b"], ["b","a"])), ["a"]);
   assert.deepEqual(plain(H.movedIds(["a","b"], ["b","a"], {b: true})), ["b"]);
   assert.deepEqual(plain(H.movedIds(["a","b","c","d"], ["a","d","b","c"], {d: true})), ["d"]);
+});
+
+
+// ---------- Notizen ----------
+test("Notizen: angeheftete zuerst, dann die zuletzt geänderten", () => {
+  const list = [{id: "a", updatedAt: 100}, {id: "b", updatedAt: 300}, {id: "c", updatedAt: 50, pinned: true}, {id: "d", createdAt: 200}];
+  assert.deepEqual(plain(H.sortNotes(list)).map((n) => n.id), ["c", "b", "d", "a"]);
+  assert.equal(list[0].id, "a", "Original bleibt unverändert");
+});
+
+test("Notizen: Suche über Titel und Text, Filter nach Bereich", () => {
+  const n = {title: "Fragen an die Hebamme", text: "Partner-Kurs? Stillberatung", tag: "birth"};
+  assert.equal(H.noteMatches(n, "", "all"), true);
+  assert.equal(H.noteMatches(n, "hebamme kurs", "all"), true, "alle Wörter, beliebige Reihenfolge");
+  assert.equal(H.noteMatches(n, "HEBAMME", "birth"), true, "Groß-/Kleinschreibung egal");
+  assert.equal(H.noteMatches(n, "hebamme windeln", "all"), false);
+  assert.equal(H.noteMatches(n, "", "names"), false, "anderer Bereich");
+});
+
+test("Notizen: Zeitangaben", () => {
+  const now = new Date(2026, 10, 7, 15, 0); // Sa., 07.11.2026, 15:00
+  const at = (d, h, m) => new Date(2026, 10, d, h, m).getTime();
+  assert.equal(H.relTime(at(7, 14, 59) + 30000, now), "gerade eben");
+  assert.equal(H.relTime(at(7, 14, 48), now), "vor 12 Min.");
+  assert.equal(H.relTime(at(7, 9, 5), now), "heute 09:05");
+  assert.equal(H.relTime(at(6, 22, 10), now), "gestern 22:10");
+  assert.equal(H.relTime(at(2, 8, 0), now), "Mo., 02.11.");
+  assert.equal(H.relTime(new Date(2025, 11, 24, 18, 0).getTime(), now), "24.12.2025");
+});
+
+test("Notizen: geänderte Zeilen für den Verlauf", () => {
+  assert.deepEqual(plain(H.lineChanges("Windeln\nFeuchttücher", "Windeln\nFeuchttücher\nNagelschere")), {added: ["Nagelschere"], removed: []});
+  assert.deepEqual(plain(H.lineChanges("A\nB\nC", "A\nC")), {added: [], removed: ["B"]});
+  assert.deepEqual(plain(H.lineChanges("A\nB", "A\nB2")), {added: ["B2"], removed: ["B"]});
+  assert.deepEqual(plain(H.lineChanges("", "Erste Zeile")), {added: ["Erste Zeile"], removed: []});
+  assert.deepEqual(plain(H.lineChanges("A\nB", "B\nA")), {added: [], removed: []}, "nur umsortiert");
 });

@@ -4,8 +4,8 @@
 
 Eine kleine [Firebase](https://firebase.google.com)-Webanwendung für werdende
 Eltern: eine gemeinsame Checkliste für die Zeit vor und nach der Geburt, ein
-Inventar für die Baby-Kleidung, eine gemeinsame Namensliste und ein
-Wehen-Timer. Die App synchronisiert in Echtzeit zwischen euren Geräten,
+gemeinsames Notizbuch, ein Inventar für die Baby-Kleidung, eine gemeinsame
+Namensliste und ein Wehen-Timer. Die App synchronisiert in Echtzeit zwischen euren Geräten,
 funktioniert auch offline und lässt sich wie eine App auf dem Handy
 installieren. Als Datenbank kommt [Cloud Firestore](https://firebase.google.com/docs/firestore)
 zum Einsatz, die Anmeldung läuft über Google-Konten.
@@ -50,6 +50,7 @@ Entwicklung und Deployment.
 | Bereich | Funktionen |
 |---|---|
 | ✅ **Checkliste** | 10 Kategorien mit 74 recherchierten Beispielpunkten; pro Punkt Frist, Termin (optional wöchentlich), Preis, Zuständigkeit (ich / Partner:in / beide), Notizen, offene Fragen und Links; „erledigt von … am …“; Punkte und Kategorien mit dem **Griff ⠿** verschieben (ziehen oder antippen – Menü mit ganz nach oben/unten, eins nach oben/unten, in andere Kategorie), umbenennen und löschen (mit „Rückgängig“); Suche und Filter; **Vorlagen-Pakete** zum Nachladen (ausführliche Kliniktasche, Behörden nach der Geburt, Wochenbett, Geburtsplan); Drucken |
+| 📝 **Notizen** | Gemeinsames **Notizbuch** als eigener Bereich: Notizen mit Titel und Text, je einem Bereich zugeordnet (Allgemein, Checkliste, Kleidung, Namen, Geburt); Suche und Filter, **angeheftete** Notizen oben; „zuletzt geändert von … “; gespeichert wird beim Tippen |
 | 🤰 **Schwangerschaft** | Aktuelle Schwangerschaftswoche aus dem Entbindungstermin (z. B. „SSW 32+0“), Trimester-Leiste, Größenvergleich mit Obst/Gemüse; nach der Geburt das Alter des Babys |
 | 📊 **Übersicht** | Kacheln für offene Fragen, Termine & Fristen und Budget (Summe aller Preise, erledigt/offen, eigenes Budget-Ziel); Kalender-Export als `.ics` mit Erinnerung am Vortag |
 | 👕 **Baby-Kleidung** | Kleidungsstücke mit Kategorie, Größe (50/56 bis 86/92, Uni Size), Farbe, Muster, Menge, Foto, Herkunft (gekauft/geschenkt/geliehen/gebraucht), „von wem“ und „gewaschen“; Bestand je Größe mit eigenen Zielen; **Jahreszeit je Größe** anhand des Entbindungstermins; Zielwert-Vorschlag passend zur Jahreszeit; **Einkaufsliste** „Was noch fehlt“; Suche, Filter und Foto-Großansicht |
@@ -58,7 +59,7 @@ Entwicklung und Deployment.
 | 🔄 **Zusammenarbeit** | Echtzeit-Sync; gleichzeitige Änderungen werden **zusammengeführt** statt überschrieben; **eigene Anzeigenamen** (z. B. Spitznamen) unabhängig vom Google-Profil |
 | 📴 **Offline & App** | Offline-Speicher für Daten und App; installierbar als App (Android, iPhone, Desktop) |
 | 🕰️ **Verlauf** | Wer hat wann was geändert (die letzten 90 Tage), Filter nach Person und Bereich, **Rückgängig** bzw. **Wiederherstellen** je Eintrag; **Rückfrage vor jedem Löschen** |
-| 💾 **Sicherung** | Export als ZIP (CSV-Dateien inkl. Verlauf, Fotos, vollständiges JSON) und Wiederherstellen daraus |
+| 💾 **Sicherung** | Export als ZIP (CSV-Dateien inkl. Notizen und Verlauf, Fotos, vollständiges JSON) und Wiederherstellen daraus |
 | 🔒 **Zugriffsschutz** | Anmeldung nur mit Google und nur für freigegebene, verifizierte Adressen – serverseitig geprüft |
 
 ---
@@ -90,6 +91,20 @@ erscheint nach dem Abhaken.
     <td align="center" width="33%"><img src="docs/screenshots/handy-checkliste.png" alt="Checkliste auf dem Handy" width="260"><br><sub><b>Auf dem Handy</b> – Griff ⠿ und Aufklapp-Pfeil neben jedem Punkt, Kennzeichen darunter</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/handy-verschieben.png" alt="Menü am Griff zum Verschieben" width="260"><br><sub><b>Verschieben</b> – am Griff ziehen oder antippen: ganz nach oben/unten, eins nach oben/unten, in andere Kategorie</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/handy-loeschen.png" alt="Rückfrage vor dem Löschen" width="260"><br><sub><b>Rückfrage vor dem Löschen</b> – „Abbrechen“ ist vorausgewählt</sub></td>
+  </tr>
+</table>
+
+### Notizen
+
+![Notizen am Computer: Suche, Filter nach Bereich, angeheftete Notizen oben](docs/screenshots/desktop-notizen.png)
+
+Das gemeinsame Notizbuch: Suche über Titel und Text, Filter nach Bereich,
+angeheftete Notizen oben. Jede Zeile zeigt, wer zuletzt geändert hat und wann.
+
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="docs/screenshots/handy-notizen.png" alt="Notizen auf dem Handy" width="260"><br><sub><b>Notizen</b> – eigener Bereich in der Leiste unten</sub></td>
+    <td align="center" width="50%"><img src="docs/screenshots/handy-notiz.png" alt="Eine Notiz bearbeiten" width="260"><br><sub><b>Eine Notiz</b> – Titel, Text, Bereich und Anheften; gespeichert wird beim Tippen</sub></td>
   </tr>
 </table>
 
@@ -204,8 +219,8 @@ nötig.
 Wer die App nutzen darf, steht ausschließlich in `firestore.rules`. Die Regeln
 lassen nur angemeldete Google-Konten mit **verifizierter** Adresse aus der
 Liste zu und erlauben den Zugriff auf `nest/shared` **und alles darunter** –
-damit sind alle Bereiche der App (Checkliste, Kleidung, Namen, Kontakte,
-Wehen) abgedeckt. Alles andere in der Datenbank ist für niemanden zugänglich.
+damit sind alle Bereiche der App (Checkliste, Notizen, Kleidung, Namen,
+Kontakte, Wehen, Verlauf) abgedeckt. Alles andere in der Datenbank ist für niemanden zugänglich.
 
 Der Zugriff ist damit doppelt abgesichert: Nur Testnutzer können sich
 anmelden (Schritt 1), und die Datenbank prüft zusätzlich jede Anfrage gegen
@@ -456,10 +471,10 @@ npm test       # = node --test tests/*.test.js
 
 Die Tests lesen den Abschnitt „REINE HILFSFUNKTIONEN“ direkt aus
 `public/index.html` und prüfen ihn mit Node – ohne Browser, ohne Firebase und
-ohne zusätzliche Pakete; es werden also keine Zugangsdaten benötigt. Die 32
+ohne zusätzliche Pakete; es werden also keine Zugangsdaten benötigt. Die 36
 Tests decken das Zusammenführen gleichzeitiger Änderungen, die Verträglichkeit
 mit Version 1, das Verschieben von Punkten, den Verlauf (Änderungen erkennen
-und zurücknehmen), Preiserkennung, Schwangerschaftswoche, Jahreszeit je Größe,
+und zurücknehmen), die Notizen (Sortierung, Suche, Zeitangaben), Preiserkennung, Schwangerschaftswoche, Jahreszeit je Größe,
 Zielwert-Vorschläge, Wehen-Auswertung, Kalender-Export, CSV-Schutz sowie
 ZIP-Erzeugung und -Auslesen ab. Die Oberfläche selbst wird mit dem Emulator
 (Schritt 3.4) ausprobiert.
@@ -479,6 +494,7 @@ ZIP-Erzeugung und -Auslesen ab. Die Oberfläche selbst wird mit dem Emulator
 | `nest/shared/contractions/{id}` | Wehen | `start`, `end` (Millisekunden), `by` |
 | `nest/shared/meta/members` | Angemeldete Personen (für „Zuständig“ usw.) | je Nutzer-ID: `email`, `name` (aus Google), `displayName` (selbst gewählt, optional) |
 | `nest/shared/meta/checklistExtras` | Kopie der Angaben, die nur Version 2 kennt | `items{}` mit `wer`, `doneBy`, `doneAt`; `budget`, `birthDate` |
+| `nest/shared/notes/{id}` | Notizen | `title`, `text`, `tag` (`allgemein`/`checklist`/`clothing`/`names`/`birth`), `pinned`, `createdBy`, `createdAt`, `updatedBy`, `updatedAt` (Millisekunden) |
 | `nest/shared/history/{id}` | Verlauf (eine Änderung pro Dokument, 90 Tage) | `at`, `by`, `area`, `op`, `label`, `old`/`new` bzw. `data`, `undone` |
 
 Die Punkte der Checkliste (`categories[].items[]`) haben die Felder `id`,

@@ -4,6 +4,46 @@ Alle nennenswerten Änderungen an „Unser Nest“, die neuesten zuerst.
 
 ---
 
+## 07.11.2026 – Version 2.4: Notizen als fünfter Bereich
+
+### Neu
+
+- **Notizen** – euer gemeinsames Notizbuch als eigener Bereich in der Leiste
+  (Reihenfolge jetzt: Checkliste · Notizen · Kleidung · Namen · Geburt;
+  Adresse `#notizen`).
+  - **Liste** mit Suche (mehrere Wörter, Titel und Text) und Filter nach
+    Bereich; angeheftete Notizen stehen oben, sonst die zuletzt geänderten
+    zuerst. Jede Zeile zeigt Titel, Vorschau, wer zuletzt geändert hat, wann
+    und den Bereich.
+  - **Einzelansicht** mit Titel, Text, Bereich (Allgemein, Checkliste,
+    Kleidung, Namen, Geburt) und Anheften. Gespeichert wird automatisch beim
+    Tippen; eine neue Notiz entsteht erst, wenn etwas hineingeschrieben wird.
+  - Löschen mit Rückfrage und „Rückgängig“.
+  - Jede Notiz ist ein eigenes Dokument – ihr könnt also gleichzeitig
+    verschiedene Notizen bearbeiten, ohne euch gegenseitig zu überschreiben.
+- **Verlauf:** Notizen erscheinen dort mit „Rückgängig“ bzw.
+  „Wiederherstellen“; bei längeren Texten steht jetzt, welche Zeilen
+  ergänzt oder entfernt wurden (gilt auch für Notizen und „Zu klären“ in der
+  Checkliste).
+- **Sicherung** enthält jetzt auch `notizen.csv` und die Notizen im JSON;
+  beim Wiederherstellen werden sie mit zurückgeholt.
+
+### Geändert
+
+- Kopfleiste für fünf Reiter: Auf Tablet-Breiten (z. B. iPad hochkant) werden
+  die Symbole der Reiter und das Wort „gespeichert“ ausgeblendet (der grüne
+  Punkt bleibt), damit alles in eine Zeile passt.
+
+### Technisches
+
+- Neue Sammlung `nest/shared/notes/{id}`; die bestehenden Zugriffsregeln
+  decken sie bereits ab.
+- Neue Hilfsfunktionen `sortNotes`, `noteMatches`, `relTime`, `lineChanges`
+  mit Tests (`npm test`, jetzt 36).
+- Service-Worker-Cache `unser-nest-v2.4`.
+
+---
+
 ## 18.10.2026 – Version 2.3: Rückfrage vor dem Löschen und Verlauf
 
 ### Neu

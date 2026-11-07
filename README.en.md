@@ -3,8 +3,9 @@
 *[🇩🇪 Deutsche Version hier verfügbar](README.md)*
 
 A small [Firebase](https://firebase.google.com) web app for parents-to-be: a
-shared checklist for the time before and after the birth, an inventory of
-baby clothes, a shared list of baby names and a contraction timer. The app
+shared checklist for the time before and after the birth, a shared notebook,
+an inventory of baby clothes, a shared list of baby names and a contraction
+timer. The app
 syncs in real time between your devices, works offline and can be installed
 like an app on your phone. [Cloud Firestore](https://firebase.google.com/docs/firestore)
 is used as the database; sign-in works with Google accounts.
@@ -50,6 +51,7 @@ development, and deployment.
 | Area | Features |
 |---|---|
 | ✅ **Checklist** | 10 categories with 74 researched example items; per item a deadline, an appointment (optionally weekly), price, assignee (me / partner / both), notes, open questions and links; "done by … on …"; move items and categories with the **grip ⠿** (drag, or tap for a menu: to top/bottom, one up/down, to another category), rename and delete them (with undo); search and filters; **template packs** you can add at any time (detailed hospital bag, paperwork after the birth, postpartum, birth plan); printing |
+| 📝 **Notes** | A shared **notebook** as its own area: notes with title and text, each assigned to an area (general, checklist, clothes, names, birth); search and filters, **pinned** notes on top; "last changed by …"; saved while you type |
 | 🤰 **Pregnancy** | Current week of pregnancy from the due date (e.g. "SSW 32+0"), trimester bar, size comparison with fruit/vegetables; after the birth the baby's age |
 | 📊 **Overview** | Tiles for open questions, appointments & deadlines and budget (sum of all prices, done/open, your own budget goal); calendar export as `.ics` with a reminder the day before |
 | 👕 **Baby clothes** | Items with category, size (50/56 to 86/92, one size), colour, pattern, quantity, photo, origin (bought/gift/borrowed/second-hand), "from whom" and "washed"; stock per size with your own targets; **season per size** based on the due date; target suggestions matching the season; **shopping list** "what's still missing"; search, filters and photo zoom |
@@ -58,7 +60,7 @@ development, and deployment.
 | 🔄 **Collaboration** | Real-time sync; simultaneous changes are **merged** instead of overwritten; **custom display names** (e.g. nicknames) independent of the Google profile |
 | 📴 **Offline & app** | Offline storage for data and app; installable as an app (Android, iPhone, desktop) |
 | 🕰️ **History** | Who changed what and when (last 90 days), filter by person and area, **undo** / **restore** per entry; **confirmation before every delete** |
-| 💾 **Backup** | Export as ZIP (CSV files incl. history, photos, full JSON) and restore from it |
+| 💾 **Backup** | Export as ZIP (CSV files incl. notes and history, photos, full JSON) and restore from it |
 | 🔒 **Access control** | Sign-in with Google only, and only for approved, verified addresses — enforced on the server |
 
 ---
@@ -90,6 +92,20 @@ is ticked off.
     <td align="center" width="33%"><img src="docs/screenshots/handy-checkliste.png" alt="Checklist on the phone" width="260"><br><sub><b>On the phone</b> – grip ⠿ and expand arrow next to every item, badges below</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/handy-verschieben.png" alt="Grip menu for moving items" width="260"><br><sub><b>Moving</b> – drag the grip or tap it: to top/bottom, one up/down, to another category</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/handy-loeschen.png" alt="Confirmation before deleting" width="260"><br><sub><b>Confirmation before deleting</b> – “Abbrechen” (cancel) is preselected</sub></td>
+  </tr>
+</table>
+
+### Notes
+
+![Notes on a computer: search, filter by area, pinned notes on top](docs/screenshots/desktop-notizen.png)
+
+The shared notebook: search across title and text, filter by area, pinned
+notes on top. Each row shows who changed it last and when.
+
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="docs/screenshots/handy-notizen.png" alt="Notes on the phone" width="260"><br><sub><b>Notes</b> – its own area in the bottom bar</sub></td>
+    <td align="center" width="50%"><img src="docs/screenshots/handy-notiz.png" alt="Editing a note" width="260"><br><sub><b>A note</b> – title, text, area and pin; saved while you type</sub></td>
   </tr>
 </table>
 
@@ -202,7 +218,7 @@ Cost: usually €0 on the free **Spark plan**, no credit card required.
 Who may use the app is defined only in `firestore.rules`. The rules admit only
 signed-in Google accounts with a **verified** address from the list and allow
 access to `nest/shared` **and everything below it** — which covers all areas
-of the app (checklist, clothes, names, contacts, contractions). Everything else
+of the app (checklist, notes, clothes, names, contacts, contractions, history). Everything else
 in the database is inaccessible to everyone.
 
 Access is therefore protected twice: only test users can sign in (step 1), and
@@ -452,8 +468,9 @@ npm test       # = node --test tests/*.test.js
 The tests read the section "REINE HILFSFUNKTIONEN" (pure helper functions)
 directly from `public/index.html` and check it with Node — without a browser,
 without Firebase and without extra packages, so no credentials are needed.
-The 32 tests cover merging simultaneous changes, compatibility with
-version 1, moving items, the history (detecting and undoing changes), price parsing, week of pregnancy, season per size, target
+The 36 tests cover merging simultaneous changes, compatibility with
+version 1, moving items, the history (detecting and undoing changes), the notes
+(sorting, search, time labels), price parsing, week of pregnancy, season per size, target
 suggestions, contraction analysis, calendar export, CSV protection, and
 writing and reading ZIP files. The user interface itself is tried out with
 the emulator (step 3.4).
@@ -473,6 +490,7 @@ the emulator (step 3.4).
 | `nest/shared/contractions/{id}` | Contractions | `start`, `end` (milliseconds), `by` |
 | `nest/shared/meta/members` | Signed-in people (for "assignee" etc.) | per user ID: `email`, `name` (from Google), `displayName` (chosen in the app, optional) |
 | `nest/shared/meta/checklistExtras` | Copy of the fields only version 2 knows | `items{}` with `wer`, `doneBy`, `doneAt`; `budget`, `birthDate` |
+| `nest/shared/notes/{id}` | Notes | `title`, `text`, `tag` (`allgemein`/`checklist`/`clothing`/`names`/`birth`), `pinned`, `createdBy`, `createdAt`, `updatedBy`, `updatedAt` (milliseconds) |
 | `nest/shared/history/{id}` | History (one change per document, 90 days) | `at`, `by`, `area`, `op`, `label`, `old`/`new` or `data`, `undone` |
 
 Checklist items (`categories[].items[]`) have the fields `id`, `title`,
